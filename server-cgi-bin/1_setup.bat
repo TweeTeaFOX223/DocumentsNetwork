@@ -13,7 +13,7 @@ if not exist Apache24\bin\httpd.exe (
     echo Downloading Apache...
     
     @REM curl を使ってApacheをダウンロード（リダイレクトに対応）
-    curl -L -o apache.zip https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.63-250207-win64-VS17.zip
+    curl -L -o apache.zip https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.66-260223-Win64-VS18.zip
     
     if not exist apache.zip (
         echo Download failed. Please download manually.
