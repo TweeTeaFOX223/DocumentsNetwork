@@ -142,3 +142,72 @@ cd server-cgi-bin
 ```
 検索したい文章のサンプルです。何か適当な内容。
 ```
+
+<br>
+
+## 🔌 Apache CGI API仕様（`main.cgi`）
+client から Apache サーバー（`main.cgi`）へ送るリクエストと、返却されるレスポンスの仕様です。
+
+### エンドポイント
+- URL: `http://localhost/cgi-bin/main.cgi`
+- Method: `POST`
+- Content-Type: `text/plain`
+  - 実際の中身は JSON 文字列を送信
+
+### リクエストボディ（JSON）
+| フィールド名 | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `name` | string | 必須 | クエリ文書名（例: `1 sample.txt`） |
+| `normalText` | string | 必須 | クエリ文書の原文 |
+| `wakachiText` | string | 必須 | 分かち書き済みテキスト |
+| `networkType` | string | 必須 | 可視化アルゴリズム（`SE` / `MDS` / `CE` / `KK`） |
+| `graphType` | string | 必須 | グラフ構築アルゴリズム（`MST` / `KNN` / `HML`） |
+| `searchNum` | string | 必須 | 検索文書数（`50` / `100` / `150` / `200`） |
+
+### レスポンスボディ（JSON）
+| フィールド名 | 型 | 説明 |
+| --- | --- | --- |
+| `edges` | array | エッジ配列 |
+| `nodes` | array | ノード配列 |
+
+`edges` 要素:
+- `x1`, `y1`, `x2`, `y2`（number）
+
+`nodes` 要素:
+- `category`（number）
+- `keyword`（string）
+- `id`（number）
+- `fileName`（string）
+- `title`（string）
+- `cx`, `cy`（number）
+- `r`（number）
+- `color`（string, 例: `#E60012`）
+
+### 軽いリクエストサンプル
+```bash
+curl -X POST "http://localhost/cgi-bin/main.cgi" \
+  -H "Content-Type: text/plain" \
+  --data-raw '{"name":"1 sample.txt","normalText":"検索したい文章です。","wakachiText":"検索 したい 文章 です 。","networkType":"KK","graphType":"KNN","searchNum":"50"}'
+```
+
+### 軽いレスポンスサンプル
+```json
+{
+  "edges": [
+    { "x1": 231.51, "y1": 114.61, "x2": 390.91, "y2": 514.59 }
+  ],
+  "nodes": [
+    {
+      "category": 1,
+      "keyword": "サンプル",
+      "id": 1,
+      "fileName": "sample.txt",
+      "title": "本文の要約テキスト",
+      "cx": 231.51,
+      "cy": 114.61,
+      "r": 12,
+      "color": "#E60012"
+    }
+  ]
+}
+```
