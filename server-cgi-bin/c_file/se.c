@@ -8,6 +8,7 @@
 char	*seVecN, **seMatF; 
 int	seDm, seDn, seDc, seDk, *seVecA, **seMatA, *seVecC;
 double	**seMatX, *seVecX, *seVecU, **seMatW, *seVecW, *seVecE;
+int seVecNCap;
 
 void    seReadValue(const char *fn1)
 {
@@ -45,12 +46,25 @@ void    seReadUid(const char *fn1)
 		fprintf(stderr, "Unknown File = %s\n", fn1);
 		exit(1);
 	}
-	seVecN = (char *) malloc(sizeof(char)*1000000);
+	seVecNCap = 1000000;
+	seVecN = (char *) malloc(sizeof(char)*seVecNCap);
 	seVecC = (int *) malloc(sizeof(int)*seDm);
 	seMatF = (char **) malloc(sizeof(char *)*seDm);
 	for(i = j = 0; i < seDm; i++){
 		fscanf(fp, "%d ", &seVecC[i]);
-		while((c = getc(fp)) != '\n') seVecN[j++] = c; 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= seVecNCap){
+				seVecNCap *= 2;
+				newBuf = (char *)realloc(seVecN, sizeof(char)*seVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				seVecN = newBuf;
+			}
+			seVecN[j++] = c;
+		}
 		seMatF[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) seMatF[i][k] = seVecN[k]; 
 		seMatF[i][j] = '\0'; j = 0; 

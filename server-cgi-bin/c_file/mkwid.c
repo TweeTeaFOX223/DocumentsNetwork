@@ -6,6 +6,7 @@
 
 char	*mkwidVecN, **mkwidMatN; 
 int		mkwidDm, mkwidDn, *mkwidVecI, *mkwidVecJ; 
+int   mkwidVecNCap;
 
 
 /* doc.txtから単語を記録 */
@@ -20,7 +21,8 @@ void    mkwidReadValue(char *fn1)
 	mkwidDn += mkwidDm;
 	fp = fopen(fn1, "r"); 
 	mkwidMatN = (char **) malloc(sizeof(char *)*mkwidDn);
-	mkwidVecN = (char *) malloc(sizeof(char)*4096);
+	mkwidVecNCap = 4096;
+	mkwidVecN = (char *) malloc(sizeof(char)*mkwidVecNCap);
 	i = j = 0; 
 	while((c = getc(fp)) != EOF){
 		if(c == ' ' || c == '\n'){ 
@@ -29,7 +31,19 @@ void    mkwidReadValue(char *fn1)
 			for(k = 0; k < j; k++) mkwidMatN[i][k] = mkwidVecN[k]; 
 			mkwidMatN[i++][j] = '\0'; j = 0; 
 		}
-		else mkwidVecN[j++] = c;
+		else {
+			if(j + 1 >= mkwidVecNCap){
+				char *newBuf;
+				mkwidVecNCap *= 2;
+				newBuf = (char *)realloc(mkwidVecN, sizeof(char)*mkwidVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				mkwidVecN = newBuf;
+			}
+			mkwidVecN[j++] = c;
+		}
 	}
 	fclose(fp);
 	mkwidDn = i;

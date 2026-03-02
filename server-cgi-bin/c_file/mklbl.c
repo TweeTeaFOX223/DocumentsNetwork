@@ -6,6 +6,7 @@
 
 char	*mklblVecN, **mklblMatM; 
 int		mklblDm, mklblDn, *mklblVecA, **mklblMatA, *mklblVecS, *mklblVecT; 
+int     mklblVecNCap;
 
 
 void    mklblReadValue0(const char *fn1)
@@ -16,12 +17,25 @@ void    mklblReadValue0(const char *fn1)
 	mklblDn = 0;
 	while((c = getc(fp)) != EOF) if(c == '\n') mklblDn +=1; 
 	fclose(fp); 
-	mklblVecN = (char *) malloc(sizeof(char)*4096);
+	mklblVecNCap = 4096;
+	mklblVecN = (char *) malloc(sizeof(char)*mklblVecNCap);
 	mklblMatM = (char **) malloc(sizeof(char *)*mklblDn);
 	fp = fopen(fn1, "r"); 
 	for(i = 0; i < mklblDn; i++){
 		while((c = getc(fp)) != EOF) if(c == ' ') break; 
-		for(j = 0; j < 4096; j++) if((mklblVecN[j] = getc(fp)) == ' ') break; 
+		for(j = 0; (c = getc(fp)) != EOF && c != ' '; j++){
+			char *newBuf;
+			if(j + 1 >= mklblVecNCap){
+				mklblVecNCap *= 2;
+				newBuf = (char *)realloc(mklblVecN, sizeof(char)*mklblVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				mklblVecN = newBuf;
+			}
+			mklblVecN[j] = c;
+		}
 		while((c = getc(fp)) != EOF) if(c == '\n') break; 
 		mklblMatM[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) mklblMatM[i][k] = mklblVecN[k]; 
@@ -62,7 +76,19 @@ void	mklblReadValue(const char *fn1)
 			for(j = 0; j < k; j++) mklblMatA[i][j] = mklblVecS[j]; 
 			i++; j = k = 0; 
 		}
-		else mklblVecN[j++] = c;
+		else {
+			char *newBuf;
+			if(j + 1 >= mklblVecNCap){
+				mklblVecNCap *= 2;
+				newBuf = (char *)realloc(mklblVecN, sizeof(char)*mklblVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				mklblVecN = newBuf;
+			}
+			mklblVecN[j++] = c;
+		}
 	}
 	fclose(fp);
 }

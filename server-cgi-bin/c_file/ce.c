@@ -10,6 +10,7 @@ char	*ceVecN, **ceMatF;
 unsigned char	ceLabel[50000][64], **ceIn;
 int	ceDm, ceDn, ceDk, ceDc, ceDh, ceDs, ceNumL, *ceNumV, **ceAdjM, ceCntV[4], *ceRanV, *ceVecD, **MatD, *ceVecC;
 double	*ceVecW, *ceVecW2, *ceDecV, **ceMatW, **ceMatW2, **ceMatG, ceValE[2], **ceMatA, *ceVecB, *ceVecE, *ceVecT, *ceVecR, *ceVecF, ceValR;
+int ceVecNCap;
 
 void	ceAllocVector(double **ptr, int dim)
 {
@@ -148,12 +149,25 @@ void    ceReadUid(const char *fn1)
 		fprintf(stderr, "Unknown File = %s\n", fn1);
 		exit(1);
 	}
-	ceVecN = (char *) malloc(sizeof(char)*1000000);
+	ceVecNCap = 1000000;
+	ceVecN = (char *) malloc(sizeof(char)*ceVecNCap);
 	ceVecC = (int *) malloc(sizeof(int)*ceDm);
 	ceMatF = (char **) malloc(sizeof(char *)*ceDm);
 	for(i = j = 0; i < ceDm; i++){
 		fscanf(fp, "%d ", &ceVecC[i]);
-		while((c = getc(fp)) != '\n') ceVecN[j++] = c; 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= ceVecNCap){
+				ceVecNCap *= 2;
+				newBuf = (char *)realloc(ceVecN, sizeof(char)*ceVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				ceVecN = newBuf;
+			}
+			ceVecN[j++] = c;
+		}
 		ceMatF[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) ceMatF[i][k] = ceVecN[k]; 
 		ceMatF[i][j] = '\0'; j = 0; 

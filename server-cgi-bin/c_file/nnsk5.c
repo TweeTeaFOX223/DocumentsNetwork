@@ -5,6 +5,7 @@
 char    *nnskVecN, **nnskMatL, **nnskMatM, **nnskMatN;
 int	     nnskN, nnskV, nnskC, nnskK, *nnskVecA, **nnskMatA, *nnskVecB, **nnskMatB, *nnskVecC, **nnskMatQ, *nnskVecH, *nnskVecS, *nnskVecT;
 double **nnskMatX, **nnskMatY, *nnskVecW, *nnskVecZ;
+int      nnskVecNCap;
 
 
 /*lbl.txtの内容を記録する*/
@@ -58,7 +59,8 @@ void nnskReadName(const char *fn1)
 	}
 
 //	配列のサイズを割り当てる(Nは文書数)
-	nnskVecN = (char *)  malloc(sizeof(char)*1000000);
+	nnskVecNCap = 1000000;
+	nnskVecN = (char *)  malloc(sizeof(char)*nnskVecNCap);
 	nnskVecC = (int *)   malloc(sizeof(int)*nnskN);
 	nnskMatN = (char **) malloc(sizeof(char *)*nnskN);
 	
@@ -79,8 +81,19 @@ void nnskReadName(const char *fn1)
 		8 sports-watch
 		9 topic-news
 */
-		while((c = getc(fp)) != '\n') 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= nnskVecNCap){
+				nnskVecNCap *= 2;
+				newBuf = (char *)realloc(nnskVecN, sizeof(char)*nnskVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				nnskVecN = newBuf;
+			}
 			nnskVecN[j++] = c;
+		}
 		
 		nnskMatN[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) 
@@ -108,8 +121,19 @@ void nnskReadWord(const char *fn1)
 	for(i = j = 0; i < nnskV; i++)
 	{
 		fscanf(fp, "%d ", &c);
-		while((c = getc(fp)) != ' ') 
+		while((c = getc(fp)) != ' '){
+			char *newBuf;
+			if(j + 1 >= nnskVecNCap){
+				nnskVecNCap *= 2;
+				newBuf = (char *)realloc(nnskVecN, sizeof(char)*nnskVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				nnskVecN = newBuf;
+			}
 			nnskVecN[j++] = c; 
+		}
 		
 		nnskMatM[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) 
@@ -139,8 +163,19 @@ void nnskReadDoc(const char *fn1)
 	nnskMatL = (char **) malloc(sizeof(char *)*nnskN);
 	for(i = j = 0; i < nnskN; i++)
 	{
-		while((c = getc(fp)) != '\n') 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= nnskVecNCap){
+				nnskVecNCap *= 2;
+				newBuf = (char *)realloc(nnskVecN, sizeof(char)*nnskVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				nnskVecN = newBuf;
+			}
 			nnskVecN[j++] = c; 
+		}
 		
 		nnskMatL[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) 

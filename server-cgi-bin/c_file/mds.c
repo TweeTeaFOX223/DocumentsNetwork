@@ -8,6 +8,7 @@
 char	*mdsVecN, **mdsMatF; 
 int		mdsDm, mdsDn, mdsDc, mdsDs, *mdsVecA, **mdsMatA, *mdsVecT, *mdsVecC; 
 double	**mdsMatX, **mdsMatG, *mdsVecW, **mdsMatW, *mdsVecE, mdsValE; 
+int     mdsVecNCap;
 
 void    mdsReadValue(const char *fn1)
 {
@@ -46,12 +47,25 @@ void    mdsReadUid(const char *fn1)
 		fprintf(stderr, "Unknown File = %s\n", fn1);
 		exit(1);
 	}
-	mdsVecN = (char *) malloc(sizeof(char)*1000000);
+	mdsVecNCap = 1000000;
+	mdsVecN = (char *) malloc(sizeof(char)*mdsVecNCap);
 	mdsVecC = (int *) malloc(sizeof(int)*mdsDm);
 	mdsMatF = (char **) malloc(sizeof(char *)*mdsDm);
 	for(i = j = 0; i < mdsDm; i++){
 		fscanf(fp, "%d ", &mdsVecC[i]);
-		while((c = getc(fp)) != '\n') mdsVecN[j++] = c; 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= mdsVecNCap){
+				mdsVecNCap *= 2;
+				newBuf = (char *)realloc(mdsVecN, sizeof(char)*mdsVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				mdsVecN = newBuf;
+			}
+			mdsVecN[j++] = c;
+		}
 		mdsMatF[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) mdsMatF[i][k] = mdsVecN[k]; 
 		mdsMatF[i][j] = '\0'; j = 0; 

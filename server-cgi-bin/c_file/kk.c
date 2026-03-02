@@ -9,6 +9,7 @@
 char	*kkVecN, **kkMatF, **kkMatC; 
 int     kkDm, kkDn, kkDc, kkCntV[4], *kkNumV, **kkAdjM, *kkNumC, *kkVecC, *kkVecA, *kkVecT1, *kkVecT2, *kkVecS;
 double	**kkIn, *kkDecV, **kkMatW, **kkMatG, kkValE[2], **kkMatA, *kkVecB, *kkVecT;
+int kkVecNCap;
 
 /* knn3000k100.txt をロード */
 void    kkReadValue(const char *fn1)
@@ -67,7 +68,8 @@ void kkReadUid(const char *fn1)
 		exit(1);
 	}
 	
-	kkVecN = (char *)  malloc(sizeof(char)*1000000);
+	kkVecNCap = 1000000;
+	kkVecN = (char *)  malloc(sizeof(char)*kkVecNCap);
 	kkVecC = (int *)   malloc(sizeof(int)*kkDm);
 	kkMatF = (char **) malloc(sizeof(char *)*kkDm);
 	kkMatC = (char **) malloc(sizeof(char *)*kkDm);
@@ -76,8 +78,19 @@ void kkReadUid(const char *fn1)
 	{
 		fscanf(fp, "%d ", &kkVecC[i]);
 		
-		while((c = getc(fp)) != '\n') 
-			kkVecN[j++] = c; 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= kkVecNCap){
+				kkVecNCap *= 2;
+				newBuf = (char *)realloc(kkVecN, sizeof(char)*kkVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				kkVecN = newBuf;
+			}
+			kkVecN[j++] = c;
+		}
 		
 		kkMatF[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) 
