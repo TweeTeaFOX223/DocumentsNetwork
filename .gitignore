@@ -1,6 +1,6 @@
-# ApacheのCGI関係
-0_data/*
-!ここに文章データを配置.txt
+# 入力データ関連
+# 0_data/*
+# !ここに文章データを配置.txt
 
 # batで作成したApacheサーバーのディレクトリを除外
 server-cgi-bin/Apache24
