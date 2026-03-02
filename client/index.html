@@ -290,10 +290,59 @@
 
             // 通信ログ
             const requestLogs = [];
+            const maxBytes = {
+                requestBody: 900000,
+                name: 49,
+                normalText: 14999,
+                wakachiToken: 19
+            };
 
             function getNowIsoString()
             {
                 return new Date().toISOString();
+            }
+
+            function getUtf8ByteLength(text)
+            {
+                return new TextEncoder().encode(text).length;
+            }
+
+            function getMaxWakachiTokenBytes(wakachiText)
+            {
+                const tokens = wakachiText.split(/\s+/).filter(Boolean);
+                let maxTokenBytes = 0;
+                for (const token of tokens) {
+                    const tokenBytes = getUtf8ByteLength(token);
+                    if (tokenBytes > maxTokenBytes) maxTokenBytes = tokenBytes;
+                }
+                return maxTokenBytes;
+            }
+
+            function validateUploadDocument(uploadDocument, requestPayload)
+            {
+                const errors = [];
+                const nameBytes = getUtf8ByteLength(uploadDocument.name);
+                const normalTextBytes = getUtf8ByteLength(uploadDocument.normalText);
+                const maxWakachiTokenBytes = getMaxWakachiTokenBytes(uploadDocument.wakachiText);
+                const requestBytes = getUtf8ByteLength(JSON.stringify(requestPayload));
+
+                if (nameBytes > maxBytes.name) {
+                    errors.push(`name が上限を超えています (${nameBytes} bytes / 上限 ${maxBytes.name} bytes)`);
+                }
+                if (normalTextBytes > maxBytes.normalText) {
+                    errors.push(`normalText が上限を超えています (${normalTextBytes} bytes / 上限 ${maxBytes.normalText} bytes)`);
+                }
+                if (maxWakachiTokenBytes > maxBytes.wakachiToken) {
+                    errors.push(`wakachiText 内の1トークンが上限を超えています (最大 ${maxWakachiTokenBytes} bytes / 上限 ${maxBytes.wakachiToken} bytes)`);
+                }
+                if (requestBytes > maxBytes.requestBody) {
+                    errors.push(`リクエスト全体が大きすぎます (${requestBytes} bytes / 推奨上限 ${maxBytes.requestBody} bytes)`);
+                }
+
+                return {
+                    valid: errors.length === 0,
+                    errors: errors
+                };
             }
 
             function getContentType(headers)
@@ -862,6 +911,20 @@
                     // クエリ文書のテキストを設定
                     uploadDocument.normalText  = uploadedText;
                     uploadDocument.wakachiText = await getWakachiSentence(uploadedText);
+
+                    const requestPayload = {
+                        name: uploadDocument.name,
+                        normalText: uploadDocument.normalText,
+                        wakachiText: uploadDocument.wakachiText,
+                        networkType: networkOption.visual,
+                        graphType: networkOption.graph,
+                        searchNum: networkOption.search
+                    };
+                    const validationResult = validateUploadDocument(uploadDocument, requestPayload);
+                    if (!validationResult.valid) {
+                        alert(`入力データが上限を超えています。\n${validationResult.errors.join("\n")}`);
+                        return;
+                    }
 
                     // ロード時の処理
                     processLoading(fileContent.name, uploadedText);
