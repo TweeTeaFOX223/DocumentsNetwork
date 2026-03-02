@@ -7,3 +7,4 @@ server-cgi-bin/Apache24
 
 # node_modulesを除外
 server-mecab/server-mecab/node_modules
+client/node_modules

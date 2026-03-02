@@ -331,6 +331,25 @@ curl -X POST "http://localhost/cgi-bin/main.cgi" \
 }
 ```
 
+### Request/Response Log 機能（client）
+client 画面下部の `Request/Response Log` では、送受信データと生成情報を確認・保存できます。
+
+- 表示される主な項目:
+  - `Request payload`（送信した JSON）
+  - `Response payload`（受信したレスポンス）
+  - `Graph generation`（生成時間・選択オプション）
+  - `Target categories (from response)`（レスポンス `nodes` から算出したカテゴリ数とカテゴリ名一覧）
+  - `Error`（HTTPエラーや JSON パースエラーなど）
+- 保存機能:
+  - `Save latest`: 最新1件のログを JSON で保存
+  - `Save all`: これまでの全ログを JSON 配列で保存
+- 保存JSONに含まれる代表フィールド:
+  - `timestamp`
+  - `request`
+  - `response`
+  - `generation`（`fileName`, `visual`, `graph`, `search`, `elapsedMs`, `elapsedSeconds`）
+  - `error`
+
 ### CGI入力サイズ制限（Cコード由来）
 `main.cgi` は C 言語実装のため、実質的に以下のサイズ制限があります。
 
