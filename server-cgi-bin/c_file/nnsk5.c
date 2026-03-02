@@ -385,9 +385,7 @@ void nnskPrintValue(const char *fn1, const char *fn2)
 		if(nnskVecT[j] == -1)
 		{
 			nnskVecT[j] = i;
-			
-			if(i < 24)
-				i++; 
+			i++;
 		}
 		
 		fprintf(fp1, "%d %s %d %s %s\n", nnskVecT[j]+1, nnskMatM[j], h+1, nnskMatN[h], nnskMatL[h]); 

@@ -11,6 +11,15 @@ int     kkDm, kkDn, kkDc, kkCntV[4], *kkNumV, **kkAdjM, *kkNumC, *kkVecC, *kkVec
 double	**kkIn, *kkDecV, **kkMatW, **kkMatG, kkValE[2], **kkMatA, *kkVecB, *kkVecT;
 int kkVecNCap;
 
+void kkCategoryToColor(int category, char color[8])
+{
+	unsigned int x = (unsigned int)category * 2654435761u;
+	unsigned int r = 64u + (x & 0x7Fu);
+	unsigned int g = 64u + ((x >> 8) & 0x7Fu);
+	unsigned int b = 64u + ((x >> 16) & 0x7Fu);
+	snprintf(color, 8, "#%02X%02X%02X", r, g, b);
+}
+
 /* knn3000k100.txt をロード */
 void    kkReadValue(const char *fn1)
 {
@@ -232,10 +241,11 @@ void kkLLsolve(double **LL, double *B, double *X, int dim)//kkMatA, kkMatG[i], k
 }
 
 
-void kkPrintValue(const char *fn1, const char *fn2, const char **nodeColor)
+void kkPrintValue(const char *fn1, const char *fn2)
 {
 	FILE	*fp;
 	int		i, j, k, x = 1600, y = 700;
+	char color[8];
 	double	v, w;
 	
 //	ノードの座標の最大値と最小値(横軸)を求める
@@ -287,9 +297,11 @@ void kkPrintValue(const char *fn1, const char *fn2, const char **nodeColor)
 	
 //	ノードの座標を生成
 	fp = fopen(fn2, "w");
-	fprintf(fp, "%d %s %f %f 12 %s\n", kkVecC[0], kkMatF[0], kkMatW[0][0], kkMatW[0][1], nodeColor[(kkVecC[0]-1)%25]); 
+	kkCategoryToColor(kkVecC[0], color);
+	fprintf(fp, "%d %s %f %f 12 %s\n", kkVecC[0], kkMatF[0], kkMatW[0][0], kkMatW[0][1], color); 
 	for(i = 1; i < kkDm; i++){
-		fprintf(fp, "%d %s %f %f 6 %s\n", kkVecC[i], kkMatF[i], kkMatW[i][0], kkMatW[i][1], nodeColor[(kkVecC[i]-1)%25]);
+		kkCategoryToColor(kkVecC[i], color);
+		fprintf(fp, "%d %s %f %f 6 %s\n", kkVecC[i], kkMatF[i], kkMatW[i][0], kkMatW[i][1], color);
 	}
 	fclose(fp);
 }
@@ -650,7 +662,7 @@ int	kkUpdateWeight(double *max)
 }
 
 
-int kk(const char **argv, const char** commonNodeColor)
+int kk(const char **argv)
 {
 	char   name[256];
     int    i, j, k, m;
@@ -686,7 +698,7 @@ int kk(const char **argv, const char** commonNodeColor)
 	}
 	
 	kkValE[0] = kkCalValue();
-	kkPrintValue(argv[2], argv[3], commonNodeColor);
+	kkPrintValue(argv[2], argv[3]);
 	
 	return 0;
 }

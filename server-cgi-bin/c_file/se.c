@@ -10,6 +10,15 @@ int	seDm, seDn, seDc, seDk, *seVecA, **seMatA, *seVecC;
 double	**seMatX, *seVecX, *seVecU, **seMatW, *seVecW, *seVecE;
 int seVecNCap;
 
+void seCategoryToColor(int category, char color[8])
+{
+	unsigned int x = (unsigned int)category * 2654435761u;
+	unsigned int r = 64u + (x & 0x7Fu);
+	unsigned int g = 64u + ((x >> 8) & 0x7Fu);
+	unsigned int b = 64u + ((x >> 16) & 0x7Fu);
+	snprintf(color, 8, "#%02X%02X%02X", r, g, b);
+}
+
 void    seReadValue(const char *fn1)
 {
 	FILE		*fp;
@@ -124,10 +133,11 @@ double	seCalWeight(int k)
 	}
 	return(err);
 }
-void	sePrintValue(const char *fn1, const char *fn2, const char ** nodeColor)
+void	sePrintValue(const char *fn1, const char *fn2)
 {
 	FILE	*fp;
 	int		i, j, k, x = 1600, y = 700;
+	char color[8];
 	double	v, w; 
 	for(i = 0; i < seDm; i++) if(i == 0) v = w = seMatW[0][i]; else if(v > seMatW[0][i]) v = seMatW[0][i]; else if(w < seMatW[0][i]) w = seMatW[0][i];
 	for(i = 0, w = w-v; i < seDm; i++) seMatW[0][i] = (0.98*x*((seMatW[0][i]-v)/w))+(0.01*x);
@@ -146,12 +156,15 @@ void	sePrintValue(const char *fn1, const char *fn2, const char ** nodeColor)
 	
 //	ノードの座標を生成
 	fp = fopen(fn2, "w");
-	fprintf(fp, "%d %s %f %f 12 %s \n", seVecC[0], seMatF[0], seMatW[0][0], seMatW[1][0], nodeColor[(seVecC[0]-1)%64]); 
-	for(i = 1; i < seDm; i++)
-		fprintf(fp, "%d %s %f %f 6 %s \n", seVecC[i], seMatF[i], seMatW[0][i], seMatW[1][i], nodeColor[(seVecC[i]-1)%65]);
+	seCategoryToColor(seVecC[0], color);
+	fprintf(fp, "%d %s %f %f 12 %s \n", seVecC[0], seMatF[0], seMatW[0][0], seMatW[1][0], color); 
+	for(i = 1; i < seDm; i++){
+		seCategoryToColor(seVecC[i], color);
+		fprintf(fp, "%d %s %f %f 6 %s \n", seVecC[i], seMatF[i], seMatW[0][i], seMatW[1][i], color);
+	}
 	fclose(fp); 
 }
-int	se(const char **argv, const char** commonNodeColor)
+int	se(const char **argv)
 {
 	int		i, k;
 	double		v, err, err2;
@@ -168,5 +181,5 @@ int	se(const char **argv, const char** commonNodeColor)
 		v += seVecE[k];   
 		//printf("%d %d %e %e\n", k+1, i+1, err, seVecE[k]);
 	}  
-	sePrintValue(argv[2], argv[3], commonNodeColor); 
+	sePrintValue(argv[2], argv[3]); 
 }

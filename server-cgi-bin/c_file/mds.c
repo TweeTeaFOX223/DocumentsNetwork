@@ -10,6 +10,15 @@ int		mdsDm, mdsDn, mdsDc, mdsDs, *mdsVecA, **mdsMatA, *mdsVecT, *mdsVecC;
 double	**mdsMatX, **mdsMatG, *mdsVecW, **mdsMatW, *mdsVecE, mdsValE; 
 int     mdsVecNCap;
 
+void mdsCategoryToColor(int category, char color[8])
+{
+	unsigned int x = (unsigned int)category * 2654435761u;
+	unsigned int r = 64u + (x & 0x7Fu);
+	unsigned int g = 64u + ((x >> 8) & 0x7Fu);
+	unsigned int b = 64u + ((x >> 16) & 0x7Fu);
+	snprintf(color, 8, "#%02X%02X%02X", r, g, b);
+}
+
 void    mdsReadValue(const char *fn1)
 {
 	FILE		*fp;
@@ -153,10 +162,11 @@ double	mdsCalVector(int k)
 	for(j = 0, v = sqrt(1.0/v); j < mdsDm; j++) mdsMatW[k][j] *= v;
 	return(err); 
 }
-void	mdsPrintValue(const char *fn1, const char *fn2, const char **nodeColor)
+void	mdsPrintValue(const char *fn1, const char *fn2)
 {
 	FILE	*fp;
 	int		i, j, k, x = 1600, y = 700;
+	char color[8];
 	double	v, w; 
 	for(i = 0; i < mdsDm; i++) if(i == 0) v = w = mdsMatW[0][i]; else if(v > mdsMatW[0][i]) v = mdsMatW[0][i]; else if(w < mdsMatW[0][i]) w = mdsMatW[0][i];
 	for(i = 0, w = w-v; i < mdsDm; i++) mdsMatW[0][i] = (0.98*x*((mdsMatW[0][i]-v)/w))+(0.01*x);
@@ -175,12 +185,15 @@ void	mdsPrintValue(const char *fn1, const char *fn2, const char **nodeColor)
 
 	// ノードの座標を生成
 	fp = fopen(fn2, "w");
-	fprintf(fp, "%d %s %f %f 12 %s\n", mdsVecC[0], mdsMatF[0], mdsMatW[0][0], mdsMatW[1][0], nodeColor[(mdsVecC[0]-1)%64]); 
-	for(i = 1; i < mdsDm; i++)
-		fprintf(fp, "%d %s %f %f 6 %s\n", mdsVecC[i], mdsMatF[i], mdsMatW[0][i], mdsMatW[1][i], nodeColor[(mdsVecC[i]-1)%65]); 
+	mdsCategoryToColor(mdsVecC[0], color);
+	fprintf(fp, "%d %s %f %f 12 %s\n", mdsVecC[0], mdsMatF[0], mdsMatW[0][0], mdsMatW[1][0], color); 
+	for(i = 1; i < mdsDm; i++){
+		mdsCategoryToColor(mdsVecC[i], color);
+		fprintf(fp, "%d %s %f %f 6 %s\n", mdsVecC[i], mdsMatF[i], mdsMatW[0][i], mdsMatW[1][i], color); 
+	}
 	fclose(fp); 
 }
-int	mds(const char **argv, const char** commonNodeColor)
+int	mds(const char **argv)
 {
 	int		i, k;
 	double		err, v;
@@ -197,6 +210,6 @@ int	mds(const char **argv, const char** commonNodeColor)
 		v += mdsVecE[k]; 
 		//printf("%d %e %e %e\n", i+1, err, mdsVecE[k], 100.0*v/mdsValE); 
 	}  
-	mdsPrintValue(argv[2], argv[3], commonNodeColor);
+	mdsPrintValue(argv[2], argv[3]);
 	return 0;
 }
