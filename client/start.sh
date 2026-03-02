@@ -2,7 +2,7 @@
 # start.sh
 
 # http-serverを起動（バックグラウンドで）
-http-server  -p 3000 &
+http-server -p 3000 -a 0.0.0.0 > /dev/null 2>&1 &
 SERVER_PID=$!
 
 # サーバーが起動するまで少し待機

@@ -9,7 +9,7 @@ services:
         source: ./client
         target: /projects/client
       - client_node_modules:/projects/client/node_modules
-    command: sh -c "npm install && npm start"
+    command: sh -c "npm install && sh ./start.sh"
     ports:
       - 3000:3000
     tty: true
@@ -33,9 +33,16 @@ services:
     ports:
       - 80:80
     volumes:
-      # リポジトリの0_dataに配置した検索対象のテキストを、
-      # DockerのUbuntuの/usr/lib/cgi-bin/dataにマウント
-      - ./0_data:/usr/lib/cgi-bin/data
+      # ホスト側0_dataを一時参照用としてマウントし、
+      # 起動時に必要ファイルのみ /usr/lib/cgi-bin/data へコピーする
+      - ./0_data:/tmp/host-data:ro
+    command: >-
+      sh -c "
+      cp /tmp/host-data/uid.txt /usr/lib/cgi-bin/data/uid.txt &&
+      cp /tmp/host-data/doc.txt /usr/lib/cgi-bin/data/doc.txt &&
+      cp /tmp/host-data/wakachi.txt /usr/lib/cgi-bin/data/wakachi.txt &&
+      apachectl -D FOREGROUND
+      "
 
 volumes:
   client_node_modules:
