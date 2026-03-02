@@ -29,6 +29,20 @@
             .ribbon-setting {
                 cursor: default !important;
             }
+            .debug-panel {
+                margin-top: 16px;
+            }
+            .debug-pre {
+                max-height: 320px;
+                overflow: auto;
+                white-space: pre-wrap;
+                word-break: break-word;
+                background: #f8f8f8;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 10px;
+                font-size: 12px;
+            }
         </style>
 <!-- ==== End Style ==== -->
     </head>
@@ -62,6 +76,9 @@
 
             <!-- loading icon -->
             <section id="box-loader"></section>
+
+            <!-- debug panel -->
+            <section id="box-debug"></section>
 
         </main>
 <!-- ==== End Box ==== -->
@@ -260,6 +277,7 @@
             const boxCategoryId       = "#box-category";
             const boxNetworkId        = "#box-network";
             const boxDocumentDetailId = "#box-document-detail";
+            const boxDebugId          = "#box-debug";
 
             // テンプレート id
             const templateLoaderId         = "#template-loader";
@@ -270,9 +288,146 @@
             const templateNetworkId        = "#template-network";
             const templateDocumentDetailId = "#template-document-detail";
 
+            // 通信ログ
+            const requestLogs = [];
+
+            function getNowIsoString()
+            {
+                return new Date().toISOString();
+            }
+
+            function getContentType(headers)
+            {
+                return headers.get("Content-Type") || headers.get("content-type") || "";
+            }
+
+            function createLogRecord(requestPayload)
+            {
+                const record = {
+                    timestamp: getNowIsoString(),
+                    request: requestPayload,
+                    response: null,
+                    error: null
+                };
+                requestLogs.push(record);
+                renderDebugPanel();
+                return record;
+            }
+
+            function updateLogResponse(record, response, responseText, responseJson)
+            {
+                record.response = {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    contentType: getContentType(response.headers),
+                    body: responseJson ?? responseText
+                };
+                renderDebugPanel();
+            }
+
+            function updateLogError(record, errorMessage)
+            {
+                record.error = {
+                    message: errorMessage,
+                    at: getNowIsoString()
+                };
+                renderDebugPanel();
+            }
+
+            function downloadJsonFile(data, filePrefix)
+            {
+                const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: "application/json;charset=utf-8"
+                });
+                const stamp = getNowIsoString().replace(/[:.]/g, "-");
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `${filePrefix}-${stamp}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            function saveLatestLog()
+            {
+                if (requestLogs.length === 0) {
+                    alert("保存できるログがありません。");
+                    return;
+                }
+                downloadJsonFile(requestLogs[requestLogs.length - 1], "network-log-latest");
+            }
+
+            function saveAllLogs()
+            {
+                if (requestLogs.length === 0) {
+                    alert("保存できるログがありません。");
+                    return;
+                }
+                downloadJsonFile(requestLogs, "network-log-all");
+            }
+
+            function renderDebugPanel()
+            {
+                const boxDebug = document.querySelector(boxDebugId);
+                if (!boxDebug) return;
+
+                const latest = requestLogs.length > 0 ? requestLogs[requestLogs.length - 1] : null;
+                const requestText = latest ? JSON.stringify(latest.request, null, 2) : "(no request yet)";
+                const responseText = latest
+                    ? JSON.stringify(latest.response, null, 2)
+                    : "(no response yet)";
+                const errorText = latest && latest.error
+                    ? JSON.stringify(latest.error, null, 2)
+                    : "(no error)";
+
+                boxDebug.innerHTML = `
+                    <div class="ui segment debug-panel">
+                        <div class="ui clearing header">
+                            Request/Response Log
+                            <div class="ui right floated buttons">
+                                <button class="ui button" id="save-latest-log">Save latest</button>
+                                <button class="ui button" id="save-all-logs">Save all</button>
+                            </div>
+                        </div>
+                        <div class="ui two column stackable grid">
+                            <div class="column">
+                                <h5 class="ui header">Request payload</h5>
+                                <pre id="debug-request" class="debug-pre"></pre>
+                            </div>
+                            <div class="column">
+                                <h5 class="ui header">Response payload</h5>
+                                <pre id="debug-response" class="debug-pre"></pre>
+                            </div>
+                        </div>
+                        <div class="ui hidden divider"></div>
+                        <h5 class="ui header">Error</h5>
+                        <pre id="debug-error" class="debug-pre"></pre>
+                    </div>
+                `;
+
+                boxDebug.querySelector("#debug-request").textContent = requestText;
+                boxDebug.querySelector("#debug-response").textContent = responseText;
+                boxDebug.querySelector("#debug-error").textContent = errorText;
+                boxDebug.querySelector("#save-latest-log").onclick = saveLatestLog;
+                boxDebug.querySelector("#save-all-logs").onclick = saveAllLogs;
+            }
+
             /* ネットワーク図の生成関数 */
             async function generateNetWork(uploadDocument)
             {
+                const requestPayload = {
+                    name: uploadDocument.name,
+                    normalText: uploadDocument.normalText,
+                    wakachiText: uploadDocument.wakachiText,
+                    networkType: networkOption.visual,
+                    graphType: networkOption.graph,
+                    searchNum: networkOption.search
+                };
+                const logRecord = createLogRecord(requestPayload);
+
                 // バックエンド側からデータを取得
                 try {
                     const response = await fetch(pathKkData, {
@@ -281,21 +436,33 @@
                         headers: {
                             "Content-Type": "text/plain" 
                         },
-                        body: JSON.stringify({
-                            name: uploadDocument.name,
-                            normalText: uploadDocument.normalText,
-                            wakachiText: uploadDocument.wakachiText,
-                            networkType: networkOption.visual,
-                            graphType: networkOption.graph,
-                            searchNum: networkOption.search
-                        }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        generateComponents(data); // DOM を生成
-                    })
+                        body: JSON.stringify(requestPayload),
+                    });
+
+                    const responseText = await response.text();
+                    let responseJson = null;
+                    try {
+                        responseJson = responseText ? JSON.parse(responseText) : null;
+                    } catch (jsonError) {
+                        responseJson = null;
+                    }
+
+                    updateLogResponse(logRecord, response, responseText, responseJson);
+
+                    if (!response.ok) {
+                        updateLogError(logRecord, `HTTP ${response.status} ${response.statusText}`);
+                        return;
+                    }
+
+                    if (!responseJson) {
+                        updateLogError(logRecord, "JSON parse failed: response is not valid JSON.");
+                        return;
+                    }
+
+                    generateComponents(responseJson); // DOM を生成
                 }
                 catch (error) {
+                    updateLogError(logRecord, String(error));
                     console.error('Fetch error:', error);
                 }
             }
@@ -717,6 +884,7 @@
             {
                 generateDivider();
                 generateDocumentForm();
+                renderDebugPanel();
             });
         </script>
 <!-- ==== End Script ==== -->
