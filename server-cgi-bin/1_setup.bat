@@ -45,13 +45,16 @@ if not exist Apache24\bin\httpd.exe (
     @REM サーバーのルートディレクトリを設定
     powershell -Command "(Get-Content Apache24\conf\httpd.conf) -replace 'c:/Apache24', '%CURR_DIR%Apache24' | Set-Content Apache24\conf\httpd.conf"
     
-    @REM cgi_moduleを有効
-    powershell -Command "(Get-Content Apache24\conf\httpd.conf) -replace '#LoadModule cgi_module', 'LoadModule cgi_module' | Set-Content Apache24\conf\httpd.conf"
+    @REM cgi_moduleを有効(先頭のコメント記号 + 空白を含む実際の行に一致させる)
+    powershell -Command "(Get-Content Apache24\conf\httpd.conf) -replace '#\s*LoadModule cgi_module', 'LoadModule cgi_module' | Set-Content Apache24\conf\httpd.conf"
 
     @REM CGI設定を追加(cgi-binのディレクトリにcgiファイルを配置)
     echo ^<Directory "%CURR_DIR%Apache24\cgi-bin"^> >> Apache24\conf\httpd.conf
     echo     Options +ExecCGI >> Apache24\conf\httpd.conf
     echo     AddHandler cgi-script .cgi .exe >> Apache24\conf\httpd.conf
+    echo     Header always set Access-Control-Allow-Origin "*" >> Apache24\conf\httpd.conf
+    echo     Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS" >> Apache24\conf\httpd.conf
+    echo     Header always set Access-Control-Allow-Headers "Content-Type" >> Apache24\conf\httpd.conf
     echo     Require all granted >> Apache24\conf\httpd.conf
     echo ^</Directory^> >> Apache24\conf\httpd.conf
     echo ScriptAlias /cgi-bin/ "%CURR_DIR%Apache24\cgi-bin\" >> Apache24\conf\httpd.conf
