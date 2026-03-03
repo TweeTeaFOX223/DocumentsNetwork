@@ -194,6 +194,40 @@ doc.txtの各文書をMeCabで形態素解析し、単語をスペース区切�
 docker compose up
 ```
 
+#### 3_A補足：コンテナ作成済みで、変更後に反映する操作
+`docker compose up` を一度実行済みの場合、変更箇所ごとに必要な操作は以下です。
+
+- client（`client/index.html` などフロントファイル）
+  - `client` は bind mount（`./client -> /projects/client`）なので、通常はファイル保存後にブラウザ再読み込みで反映されます。
+  - サービスを再起動したい場合:
+  ```
+  docker compose restart client
+  ```
+
+- mecab（`server-mecab/*.js` など）
+  - `mecab` はイメージ内の `/projects/server-mecab` を実行しているため、コード変更は再ビルドが必要です。
+  ```
+  docker compose up -d --build mecab
+  ```
+
+- C CGI（`server-cgi-bin/c_file/*.c` や `settings/DockerfileCgi`）
+  - `main.cgi` は Docker イメージ作成時に C をコンパイルして生成しているため、Cコード変更は再ビルドが必要です。
+  ```
+  docker compose up -d --build cgi
+  ```
+
+- `0_data`（`uid.txt` / `doc.txt` / `wakachi.txt`）
+  - `cgi` 起動時にコンテナ内へコピーする仕様のため、`0_data` を変更したら `cgi` の再作成（または再起動）で反映します。
+  ```
+  docker compose up -d --force-recreate cgi
+  ```
+
+補足:
+- 全部まとめて更新する場合は以下で再ビルド/再作成できます。
+```
+docker compose up -d --build
+```
+
   
 ※DockerはPCのストレージの消費量が大きいです。ストレージ消費を少なく済ませたい場合は、3_Bの方に書いてある方法を使ってください。  
 <br>  

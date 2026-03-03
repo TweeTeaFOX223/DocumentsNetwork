@@ -124,18 +124,28 @@
                 position: relative;
             }
             .graph-workspace.is-locked::after {
-                content: "グラフ生成後に操作できます";
+                content: "";
                 position: absolute;
                 inset: 0;
                 background: rgba(120, 120, 120, 0.35);
-                color: #1f2d3d;
-                font-weight: 700;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 z-index: 20;
                 pointer-events: auto;
+            }
+            .graph-workspace.is-locked::before {
+                content: "グラフ生成後に操作できます";
+                position: absolute;
+                top: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.78);
+                color: rgba(255, 255, 255, 0.92);
+                padding: 10px 14px;
+                border-radius: 6px;
+                font-weight: 700;
+                font-size: 16px;
+                z-index: 21;
+                pointer-events: none;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
             }
             .network-layout {
                 width: 80vw;
@@ -390,6 +400,10 @@
             .display-mode-options .field {
                 margin: 0;
             }
+            .color-control-row .control-block + .control-block {
+                border-left: 1px solid #cfd8e1;
+                padding-left: 10px;
+            }
             #divider-header {
                 margin-top: 14px !important;
                 margin-bottom: 0 !important;
@@ -442,13 +456,13 @@
                     </section>
                 </section>
                 <section id="box-network-height-splitter" aria-label="resize graph area height"></section>
+
+                <!-- debug panel -->
+                <section id="box-debug"></section>
             </section>
 
             <!-- loading icon -->
             <section id="box-loader"></section>
-
-            <!-- debug panel -->
-            <section id="box-debug"></section>
 
         </main>
 <!-- ==== End Box ==== -->
@@ -698,6 +712,27 @@
                 return new Date().toISOString();
             }
 
+            function getNowTokyoFileStamp()
+            {
+                const now = new Date();
+                const parts = new Intl.DateTimeFormat("sv-SE", {
+                    timeZone: "Asia/Tokyo",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hourCycle: "h23"
+                }).formatToParts(now);
+                const valueByType = {};
+                parts.forEach((p) => {
+                    if (p.type !== "literal") valueByType[p.type] = p.value;
+                });
+                const ms = String(now.getMilliseconds()).padStart(3, "0");
+                return `${valueByType.year}-${valueByType.month}-${valueByType.day}_${valueByType.hour}-${valueByType.minute}-${valueByType.second}-${ms}`;
+            }
+
             function toSaturatedColor(hexColor, saturationPercent)
             {
                 if (!hexColor || !hexColor.startsWith("#")) return hexColor;
@@ -874,7 +909,7 @@
 
                 const source = `<?xml version="1.0" encoding="UTF-8"?>\n${exportSvg.outerHTML}`;
                 const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
-                const stamp = getNowIsoString().replace(/[:.]/g, "-");
+                const stamp = getNowTokyoFileStamp();
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
@@ -1174,7 +1209,7 @@
                 const blob = new Blob([JSON.stringify(data, null, 2)], {
                     type: "application/json;charset=utf-8"
                 });
-                const stamp = getNowIsoString().replace(/[:.]/g, "-");
+                const stamp = getNowTokyoFileStamp();
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
