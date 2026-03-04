@@ -131,6 +131,10 @@ cd DocumentsNetwork
 - `/0_data/wakachi.txt`
 - `/0_data/uid.txt`
 
+### [2.1]：`/0_query`にクエリ文書サンプルがある  
+`/0_query` に、アップロード動作確認に使えるクエリ文書サンプル（`.csv`）があります。    
+アプリ画面の `Upload query document !` から、そのまま選択して試せます。
+
 #### `/0_data/doc.txt`  
 各文書のメタ情報を格納したファイルです。nnsk5.c の nnskReadName() で読み込まれます。カテゴリー番号はノードの色分けに直結します。1文書を必ず1行で記述し、途中の改行は除去してください。行番号が uid.txt および wakachi.txt と一致している必要があります。  
 フォーマット（1行 = 1文書）  
