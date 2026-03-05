@@ -268,6 +268,10 @@ cd server-cgi-bin
 [3_A]か[3_B]の項目にある内容を実行し、各サーバーを起動した状態で、`http://localhost:3000/`にアクセスするとアプリが使用できます。  
 
 「Upload query document !」を押下して、検索クエリの文章データをアップロードすると、グラフによる検索結果の可視化ができます。詳細：[類似文書を検索してネットワーク図を生成する](https://or-expert.com/?p=3841)  
+
+補足（まれな障害時）:
+- まれに Apache 側で `503` が返り、ブラウザでは CORS エラー表示になることがあります。
+- その場合は `docker compose down` → `docker compose up -d --build` でコンテナを再起動してください。
   
 <br>  
   

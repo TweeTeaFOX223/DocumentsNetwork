@@ -821,6 +821,7 @@
             let viewCoordsState = { tx: 0, ty: 0, scale: 1 };
             let experimentCancelRequested = false;
             let selectedUploadFile = null;
+            let last503NoticeAt = 0;
 
             function getNowIsoString()
             {
@@ -1637,6 +1638,15 @@
                 status.classList.toggle("is-error", Boolean(isError));
             }
 
+            function show503RecoveryNoticeIfNeeded()
+            {
+                const now = Date.now();
+                // 連続表示を抑止（同一操作中の多重アラート回避）
+                if (now - last503NoticeAt < 30000) return;
+                last503NoticeAt = now;
+                alert("Apache側で503エラーが発生しました。まれに発生するため、改善しない場合は Docker コンテナを再起動（docker compose down → docker compose up -d --build）してください。");
+            }
+
             function getCategorySummaryFromResponse(response)
             {
                 if (!response || !response.body || typeof response.body !== "object") return null;
@@ -1693,6 +1703,9 @@
                     updateLogResponse(logRecord, response, responseText, responseJson);
 
                     if (!response.ok) {
+                        if (response.status === 503) {
+                            show503RecoveryNoticeIfNeeded();
+                        }
                         updateLogError(logRecord, `HTTP ${response.status} ${response.statusText}`);
                         return { success: false, logRecord };
                     }
