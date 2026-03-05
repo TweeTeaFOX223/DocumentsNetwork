@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 # start.sh
+set -eu
 
-# http-serverを起動（バックグラウンドで）
-http-server -p 3000 -a 0.0.0.0 > /dev/null 2>&1 &
+# ローカル依存の http-server を起動（バックグラウンドで）
+npx http-server -p 3000 -a 0.0.0.0 > /dev/null 2>&1 &
 SERVER_PID=$!
 
 # サーバーが起動するまで少し待機

@@ -7,6 +7,7 @@
         <meta charset="UTF-8">
         <title>k-saito-browsing</title>
         <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+        <script src="./node_modules/jszip/dist/jszip.min.js"></script>
         <link rel="stylesheet" type="text/css" href="./node_modules/fomantic-ui-css/semantic.min.css">
 <!-- ==== Begin Style ==== -->
         <style>
@@ -147,6 +148,14 @@
                 z-index: 21;
                 pointer-events: none;
                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+            }
+            .graph-workspace.is-locked.is-experiment-ready .experiment-feature-block {
+                position: relative;
+                z-index: 30;
+                pointer-events: auto;
+                background: #ffffff;
+                border-radius: 6px;
+                padding: 8px 10px 10px 10px;
             }
             .network-layout {
                 width: 80vw;
@@ -305,6 +314,61 @@
             #box-debug {
                 width: 80vw;
                 margin: 0 auto;
+            }
+            .experiment-feature-block {
+                margin-top: 10px;
+                padding-top: 12px;
+                border-top: 2px solid #cfd8e1;
+            }
+            .experiment-feature-note {
+                margin: 0 0 8px 0;
+                color: #505e6d;
+                font-size: 13px;
+            }
+            .experiment-run-button {
+                min-height: 44px;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                padding: 10px 16px !important;
+            }
+            .experiment-progress-popup {
+                position: fixed;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 5000;
+                width: min(92vw, 760px);
+                background: rgba(24, 32, 41, 0.96);
+                border: 1px solid #4a6078;
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: #f1f4f8;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            }
+            .experiment-progress-popup.is-hidden {
+                display: none;
+            }
+            .experiment-progress-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            .experiment-progress-title {
+                font-size: 14px;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+            .experiment-progress-cancel {
+                flex: 0 0 auto;
+            }
+            .experiment-progress-message {
+                font-size: 13px;
+                line-height: 1.45;
+                color: rgba(241, 244, 248, 0.95);
+                white-space: pre-wrap;
+                word-break: break-word;
             }
             .debug-pre {
                 max-height: 320px;
@@ -707,6 +771,7 @@
             let detachGraphHeightSplitterHandlers = null;
             let detachDocRatioSplitterHandlers = null;
             let viewCoordsState = { tx: 0, ty: 0, scale: 1 };
+            let experimentCancelRequested = false;
 
             function getNowIsoString()
             {
@@ -874,24 +939,15 @@
                 el.textContent = `x:${tx} / y:${ty} / zoom:${zoomPercent}%`;
             }
 
-            function saveCurrentSvg()
+            function buildCurrentGraphSvgSource()
             {
                 const svg = document.querySelector(`${boxNetworkId} svg`);
-                if (!svg) {
-                    alert("保存できるグラフがありません。");
-                    return;
-                }
+                if (!svg) return null;
                 const viewportGroup = svg.querySelector("g.network-viewport");
-                if (!viewportGroup) {
-                    alert("保存できるグラフがありません。");
-                    return;
-                }
+                if (!viewportGroup) return null;
 
                 const bounds = getGraphBounds(viewportGroup);
-                if (!bounds) {
-                    alert("保存できるグラフがありません。");
-                    return;
-                }
+                if (!bounds) return null;
                 const pad = 20;
                 const exportWidth = Math.max(1, Math.ceil(bounds.width + pad * 2));
                 const exportHeight = Math.max(1, Math.ceil(bounds.height + pad * 2));
@@ -907,8 +963,16 @@
                 const clonedViewport = viewportGroup.cloneNode(true);
                 clonedViewport.removeAttribute("transform");
                 exportSvg.appendChild(clonedViewport);
+                return `<?xml version="1.0" encoding="UTF-8"?>\n${exportSvg.outerHTML}`;
+            }
 
-                const source = `<?xml version="1.0" encoding="UTF-8"?>\n${exportSvg.outerHTML}`;
+            function saveCurrentSvg()
+            {
+                const source = buildCurrentGraphSvgSource();
+                if (!source) {
+                    alert("保存できるグラフがありません。");
+                    return;
+                }
                 const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
                 const stamp = getNowTokyoFileStamp();
                 const url = URL.createObjectURL(blob);
@@ -923,6 +987,198 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+            }
+
+            function getCurrentSelectedFileName()
+            {
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+                return file ? file.name : "未選択";
+            }
+
+            function updateExperimentReadyState()
+            {
+                const workspace = document.querySelector(graphWorkspaceId);
+                if (!workspace) return;
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const hasFile = Boolean(fileInput && fileInput.files && fileInput.files[0]);
+                workspace.classList.toggle("is-experiment-ready", hasFile);
+            }
+
+            function ensureExperimentProgressPopup()
+            {
+                let popup = document.querySelector("#experiment-progress-popup");
+                if (popup) return popup;
+
+                popup = document.createElement("section");
+                popup.id = "experiment-progress-popup";
+                popup.className = "experiment-progress-popup is-hidden";
+                popup.innerHTML = `
+                    <div class="experiment-progress-header">
+                        <div class="experiment-progress-title">全オプション実験の進捗</div>
+                        <button id="experiment-cancel-button" class="ui tiny red button experiment-progress-cancel" type="button">中止</button>
+                    </div>
+                    <div id="experiment-progress-message" class="experiment-progress-message"></div>
+                `;
+                document.body.appendChild(popup);
+
+                const cancelButton = popup.querySelector("#experiment-cancel-button");
+                cancelButton.addEventListener("click", () => {
+                    experimentCancelRequested = true;
+                    cancelButton.disabled = true;
+                    const message = popup.querySelector("#experiment-progress-message");
+                    if (message) {
+                        message.textContent = `${message.textContent}\n中止リクエストを受け付けました。現在の処理完了後に停止します。`;
+                    }
+                });
+                return popup;
+            }
+
+            function showExperimentProgressPopup(message)
+            {
+                const popup = ensureExperimentProgressPopup();
+                const cancelButton = popup.querySelector("#experiment-cancel-button");
+                if (cancelButton) cancelButton.disabled = false;
+                popup.classList.remove("is-hidden");
+                const msgEl = popup.querySelector("#experiment-progress-message");
+                if (msgEl) msgEl.textContent = message || "";
+            }
+
+            function updateExperimentProgressPopup(message)
+            {
+                const popup = ensureExperimentProgressPopup();
+                const msgEl = popup.querySelector("#experiment-progress-message");
+                if (msgEl) msgEl.textContent = message || "";
+            }
+
+            function hideExperimentProgressPopup()
+            {
+                const popup = document.querySelector("#experiment-progress-popup");
+                if (!popup) return;
+                popup.classList.add("is-hidden");
+            }
+
+            async function runAllCombinationsExperiment()
+            {
+                if (!window.JSZip) {
+                    alert("JSZip が読み込まれていません。");
+                    return;
+                }
+
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+                if (!file) {
+                    alert("先にクエリ文書を選択してください。");
+                    return;
+                }
+
+                const shouldStart = window.confirm("これは実験用機能です。この作業には時間がかかります。");
+                if (!shouldStart) return;
+
+                const visuals = ["SE", "MDS", "CE", "KK"];
+                const graphs = ["MST", "KNN", "HML"];
+                const searches = ["50", "100", "150", "200"];
+                const total = visuals.length * graphs.length * searches.length;
+
+                const zip = new JSZip();
+                const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, "_");
+                const rootStamp = getNowTokyoFileStamp();
+
+                setGraphWorkspaceLocked(true);
+                experimentCancelRequested = false;
+                showExperimentProgressPopup(`開始準備中...\n対象ファイル: ${file.name}\n進捗: 0/${total}`);
+                try {
+                    setGenerationStatus(`全オプション実験を実行中... (0/${total})`);
+
+                    const reader = new FileReader();
+                    reader.readAsText(file, "UTF-8");
+                    const uploadedText = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = (error) => reject(error);
+                    });
+                    const wakachiText = await getWakachiSentence(uploadedText);
+                    const uploadDocument = {
+                        name: `1 ${file.name}`,
+                        normalText: uploadedText,
+                        wakachiText: wakachiText
+                    };
+
+                    let done = 0;
+                    for (const visual of visuals) {
+                        for (const graph of graphs) {
+                            for (const search of searches) {
+                                if (experimentCancelRequested) {
+                                    throw new Error("EXPERIMENT_CANCELLED");
+                                }
+                                const option = { visual, graph, search };
+                                networkOption = option;
+                                const comboStart = performance.now();
+                                const result = await generateNetWork(uploadDocument, option);
+                                const comboMs = performance.now() - comboStart;
+                                const comboSec = Number((comboMs / 1000).toFixed(2));
+                                done += 1;
+                                setGenerationStatus(`全オプション実験を実行中... (${done}/${total})`);
+                                updateExperimentProgressPopup(
+                                    `対象ファイル: ${file.name}\n進捗: ${done}/${total}\n完了: ${visual} / ${graph} / ${search}件`
+                                );
+
+                                const visualLabel = visualLabelMap[option.visual] || option.visual;
+                                const graphLabel = graphLabelMap[option.graph] || option.graph;
+                                updateLogGeneration(result.logRecord, {
+                                    fileName: file.name,
+                                    visual: visualLabel,
+                                    graph: graphLabel,
+                                    search: `${option.search}件`,
+                                    elapsedMs: Math.round(comboMs),
+                                    elapsedSeconds: comboSec,
+                                    experimentProgress: {
+                                        done,
+                                        total
+                                    }
+                                });
+
+                                const dirStamp = getNowTokyoFileStamp();
+                                const dirName = `${visual}_${graph}_${search}件_${dirStamp}`;
+                                const dir = zip.folder(dirName);
+                                dir.file("request-response-log.json", JSON.stringify(result.logRecord, null, 2));
+
+                                if (result.success) {
+                                    const svgSource = buildCurrentGraphSvgSource();
+                                    if (svgSource) dir.file("graph.svg", svgSource);
+                                } else {
+                                    dir.file("graph.svg", "<!-- graph generation failed -->");
+                                }
+                            }
+                        }
+                    }
+
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+                    const url = URL.createObjectURL(zipBlob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `実験_${safe(file.name)}_${rootStamp}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    setGenerationStatus(`全オプション実験が完了しました (${total}/${total})`);
+                    updateExperimentProgressPopup(`全オプション実験が完了しました。\n対象ファイル: ${file.name}\n進捗: ${total}/${total}`);
+                } catch (error) {
+                    if (String(error && error.message) === "EXPERIMENT_CANCELLED") {
+                        setGenerationStatus("全オプション実験を中止しました。", true);
+                        updateExperimentProgressPopup("全オプション実験を中止しました。");
+                    } else {
+                        setGenerationStatus("全オプション実験でエラーが発生しました。", true);
+                        updateExperimentProgressPopup(`全オプション実験でエラーが発生しました。\n${String(error)}`);
+                    }
+                    console.error(error);
+                } finally {
+                    setGraphWorkspaceLocked(false);
+                    setTimeout(() => {
+                        hideExperimentProgressPopup();
+                    }, 1800);
+                    renderDebugPanel();
+                }
             }
 
             function getGraphBounds(viewportGroup)
@@ -975,6 +1231,7 @@
                 const workspace = document.querySelector(graphWorkspaceId);
                 if (!workspace) return;
                 workspace.classList.toggle("is-locked", Boolean(locked));
+                updateExperimentReadyState();
             }
 
             function setupLayoutSplitter()
@@ -1243,6 +1500,12 @@
             {
                 const boxDebug = document.querySelector(boxDebugId);
                 if (!boxDebug) return;
+                const currentFileName = getCurrentSelectedFileName();
+                const currentFileNameText = String(currentFileName)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
 
                 const latest = requestLogs.length > 0 ? requestLogs[requestLogs.length - 1] : null;
                 const requestText = latest ? JSON.stringify(latest.request, null, 2) : "(no request yet)";
@@ -1292,6 +1555,14 @@
                         <div class="ui hidden divider"></div>
                         <h5 class="ui header">Error</h5>
                         <pre id="debug-error" class="debug-pre"></pre>
+                        <div class="experiment-feature-block">
+                            <p class="experiment-feature-note">
+                                実験用機能です。48通り（Visual 4 × Graph 3 × Search 4）の一括実行を行います。
+                            </p>
+                            <button class="ui teal button experiment-run-button" id="run-all-combinations">
+                                「${currentFileNameText}」に対して全オプション実験(48通り)を実行してZIP保存
+                            </button>
+                        </div>
                     </div>
                 `;
 
@@ -1302,6 +1573,7 @@
                 boxDebug.querySelector("#debug-error").textContent = errorText;
                 boxDebug.querySelector("#save-latest-log").onclick = saveLatestLog;
                 boxDebug.querySelector("#save-all-logs").onclick = saveAllLogs;
+                boxDebug.querySelector("#run-all-combinations").onclick = runAllCombinationsExperiment;
             }
 
             function setGenerationStatus(text, isError = false)
@@ -1333,15 +1605,16 @@
             }
 
             /* ネットワーク図の生成関数 */
-            async function generateNetWork(uploadDocument)
+            async function generateNetWork(uploadDocument, optionOverride = null)
             {
+                const option = optionOverride || networkOption;
                 const requestPayload = {
                     name: uploadDocument.name,
                     normalText: uploadDocument.normalText,
                     wakachiText: uploadDocument.wakachiText,
-                    networkType: networkOption.visual,
-                    graphType: networkOption.graph,
-                    searchNum: networkOption.search
+                    networkType: option.visual,
+                    graphType: option.graph,
+                    searchNum: option.search
                 };
                 const logRecord = createLogRecord(requestPayload);
 
@@ -1377,7 +1650,7 @@
                     }
 
                     generateComponents(responseJson); // DOM を生成
-                    return { success: true, logRecord };
+                    return { success: true, logRecord, responseJson };
                 }
                 catch (error) {
                     updateLogError(logRecord, String(error));
@@ -1389,6 +1662,11 @@
             /* ネットワーク図の生成関数 */
             function generateComponents(knnDatas)
             {
+                // 実験ループ実行時も前回描画を確実に破棄してから再描画する
+                clearCategory();
+                clearNetwork();
+                clearDocumentDetail();
+                documents.length = 0;
                 generateDivider();
                 generateDocumentForm("visible");
                 generateCategories(knnDatas.nodes); // ノードの要素にカテゴリー情報が存在する
@@ -1743,6 +2021,8 @@
             {
                 const boxCategory      = document.querySelector(boxCategoryId);
                 const templateCategory = document.querySelector(templateCategoryId);
+                if (!boxCategory || !templateCategory) return;
+                boxCategory.innerHTML = "";
 
                 // カテゴリーを追加するメソッド
                 const addCategory = (category) =>
@@ -1787,6 +2067,8 @@
                 const cloneDivider2   = document.importNode(templateDivider.content, true);
                 const boxDivider1     = document.querySelector(boxDivider1Id);
                 const boxDivider2     = document.querySelector(boxDivider2Id);
+                boxDivider1.innerHTML = "";
+                boxDivider2.innerHTML = "";
                 boxDivider1.appendChild(cloneDivider1);
                 boxDivider2.appendChild(cloneDivider2);
                 boxDivider1.querySelector("i").classList.add("connectdevelop", "icon");
@@ -1832,6 +2114,8 @@
                 const renderFileName = () => {
                     const selected = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
                     nameLabel.textContent = selected ? selected.name : "未選択";
+                    updateExperimentReadyState();
+                    renderDebugPanel();
                 };
                 fileInput.addEventListener("change", renderFileName);
                 renderFileName();
@@ -1879,6 +2163,7 @@
             {
                 const boxCategory = document.querySelector(boxCategoryId);
                 boxCategory.innerHTML = '';
+                categories = [];
             }
 
             /* ネットワークの削除関数 */

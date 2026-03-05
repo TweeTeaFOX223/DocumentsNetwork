@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "description": "This application is a network for browsing documents.",
   "scripts": {
-    "start": "http-server -p 3000"
+    "start": "http-server -p 3000 -a 0.0.0.0"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "fomantic-ui-css": "^2.9.4",
-    "http-server": "^0.12.3",
-    "jquery": "^3.6.3"
+    "http-server": "^14.1.1",
+    "jquery": "^3.6.3",
+    "jszip": "^3.10.1"
   }
 }

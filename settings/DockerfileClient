@@ -8,7 +8,6 @@ COPY ./client .
 
 # 依存関係のインストール
 RUN npm install
-RUN npm install -g http-server
 
 # アプリケーションの起動
-CMD ["./start.sh"]
+CMD ["sh", "./start.sh"]

@@ -9,7 +9,16 @@ services:
         source: ./client
         target: /projects/client
       - client_node_modules:/projects/client/node_modules
-    command: sh -c "npm install && sh ./start.sh"
+    command: >-
+      sh -c "
+      npm install &&
+      echo '=================================================================' &&
+      echo 'アプリケーションが起動しました！' &&
+      echo '使用するには以下のURLを開いてください：' &&
+      echo 'http://localhost:3000/' &&
+      echo '=================================================================' &&
+      npx http-server -p 3000 -a 0.0.0.0 > /dev/null 2>&1
+      "
     ports:
       - 3000:3000
     tty: true
