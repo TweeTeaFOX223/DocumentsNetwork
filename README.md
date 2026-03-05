@@ -4,6 +4,9 @@
 
 単なる類似度スコアによる順位付けにとどまらず、「**どの単語がどれくらいクエリとの類似に貢献しているか**」を単語ごとに数値化した**類似貢献度ベクトル**を用いて文書間のグラフを構成します。各文書には貢献度が最も高い単語が**説明語**として付与され、同じ説明語を持つ文書グループは同じ色で表示されるため、検索結果全体が「どんなテーマの文書が多いか」「どんなキーワードで似ているか」を一目で把握できます。
 <p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1.png">
+</p>
+<p align="center">
   <img width="852" alt="DocumentsNetwork Screenshot" src="https://github.com/user-attachments/assets/90f927b4-236b-4c8e-836f-0d89f81fcbb8">
 </p>
 
@@ -441,6 +444,13 @@ curl -X POST "http://localhost/cgi-bin/main.cgi" \
 ---
 
 ### Request/Response Log 機能（client）
+<p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image2.png">
+</p>
+<p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image3.png">
+</p>
+
 client 画面下部の `Request/Response Log` では、送受信データと生成情報を確認・保存できます。
 
 - 表示される主な項目:
