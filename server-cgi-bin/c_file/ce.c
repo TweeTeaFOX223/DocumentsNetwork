@@ -10,6 +10,16 @@ char	*ceVecN, **ceMatF;
 unsigned char	ceLabel[50000][64], **ceIn;
 int	ceDm, ceDn, ceDk, ceDc, ceDh, ceDs, ceNumL, *ceNumV, **ceAdjM, ceCntV[4], *ceRanV, *ceVecD, **MatD, *ceVecC;
 double	*ceVecW, *ceVecW2, *ceDecV, **ceMatW, **ceMatW2, **ceMatG, ceValE[2], **ceMatA, *ceVecB, *ceVecE, *ceVecT, *ceVecR, *ceVecF, ceValR;
+int ceVecNCap;
+
+void ceCategoryToColor(int category, char color[8])
+{
+	unsigned int x = (unsigned int)category * 2654435761u;
+	unsigned int r = 64u + (x & 0x7Fu);
+	unsigned int g = 64u + ((x >> 8) & 0x7Fu);
+	unsigned int b = 64u + ((x >> 16) & 0x7Fu);
+	snprintf(color, 8, "#%02X%02X%02X", r, g, b);
+}
 
 void	ceAllocVector(double **ptr, int dim)
 {
@@ -82,10 +92,11 @@ void    cePrintMatrix(double **mp, int dim)
 		//printf("\n");
 	}
 }
-void	cePrintValue(const char *fn1, const char *fn2, const char **nodeColor)
+void	cePrintValue(const char *fn1, const char *fn2)
 {
 	FILE	*fp;
 	int		i, j, k, x = 1600, y = 700;
+	char color[8];
 	double	v, w; 
 	for(i = 0; i < ceDm; i++) if(i == 0) v = w = ceMatW[i][0]; else if(v > ceMatW[i][0]) v = ceMatW[i][0]; else if(w < ceMatW[i][0]) w = ceMatW[i][0];
 	for(i = 0, w = w-v; i < ceDm; i++) ceMatW[i][0] = (0.98*x*((ceMatW[i][0]-v)/w))+(0.01*x);
@@ -104,9 +115,12 @@ void	cePrintValue(const char *fn1, const char *fn2, const char **nodeColor)
 
 	// ノードの座標を生成
 	fp = fopen(fn2, "w");
-	fprintf(fp, "%d %s %f %f 12 %s\n", ceVecC[0], ceMatF[0], ceMatW[0][0], ceMatW[0][1], nodeColor[(ceVecC[0]-1)%64]);
-	for(i = 1; i < ceDm; i++)
-		fprintf(fp, "%d %s %f %f 6 %s\n", ceVecC[i], ceMatF[i], ceMatW[i][0], ceMatW[i][1], nodeColor[(ceVecC[i]-1)%65]);
+	ceCategoryToColor(ceVecC[0], color);
+	fprintf(fp, "%d %s %f %f 12 %s\n", ceVecC[0], ceMatF[0], ceMatW[0][0], ceMatW[0][1], color);
+	for(i = 1; i < ceDm; i++){
+		ceCategoryToColor(ceVecC[i], color);
+		fprintf(fp, "%d %s %f %f 6 %s\n", ceVecC[i], ceMatF[i], ceMatW[i][0], ceMatW[i][1], color);
+	}
 	fclose(fp); 
 }
 void    ceReadValue(const char *fn1)
@@ -148,12 +162,25 @@ void    ceReadUid(const char *fn1)
 		fprintf(stderr, "Unknown File = %s\n", fn1);
 		exit(1);
 	}
-	ceVecN = (char *) malloc(sizeof(char)*1000000);
+	ceVecNCap = 1000000;
+	ceVecN = (char *) malloc(sizeof(char)*ceVecNCap);
 	ceVecC = (int *) malloc(sizeof(int)*ceDm);
 	ceMatF = (char **) malloc(sizeof(char *)*ceDm);
 	for(i = j = 0; i < ceDm; i++){
 		fscanf(fp, "%d ", &ceVecC[i]);
-		while((c = getc(fp)) != '\n') ceVecN[j++] = c; 
+		while((c = getc(fp)) != '\n'){
+			char *newBuf;
+			if(j + 1 >= ceVecNCap){
+				ceVecNCap *= 2;
+				newBuf = (char *)realloc(ceVecN, sizeof(char)*ceVecNCap);
+				if(newBuf == NULL){
+					fprintf(stderr, "Memory allocation failed\n");
+					exit(1);
+				}
+				ceVecN = newBuf;
+			}
+			ceVecN[j++] = c;
+		}
 		ceMatF[i] = (char *) malloc(sizeof(char)*(j+1));
 		for(k = 0; k < j; k++) ceMatF[i][k] = ceVecN[k]; 
 		ceMatF[i][j] = '\0'; j = 0; 
@@ -432,7 +459,7 @@ int	ceSetCovering(double v)
 	*/
 	return(k);
 }
-int	ce(const char **argv, const char** commonNodeColor)
+int	ce(const char **argv)
 {
 	char		name[256];
 	int		h, i, j, k, itr, argc = 4;
@@ -476,6 +503,6 @@ int	ce(const char **argv, const char** commonNodeColor)
 		for(i = 0, x = 0.0; i < k; i++) x += ceVecF[ceRanV[i]]; 
 		//printf("Result: %d %f %f %f %d %f\n", ceDn, ceValE[0], z, y, k, x/k);
 	}
-	cePrintValue(argv[2], argv[3], commonNodeColor);
+	cePrintValue(argv[2], argv[3]);
 	return 0; 
 }

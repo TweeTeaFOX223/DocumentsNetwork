@@ -9,6 +9,10 @@
 #include "generateNetwork.h"
 #include "preprocess.h"
 #define Dn "0001"
+#define MAX_KEYWORD_LEN 512
+#define MAX_FILENAME_LEN 4096
+#define MAX_CONTEXT_LEN 262144
+#define MAX_COLOR_LEN 32
 
 // ネットワーク生成時のオプション
 typedef struct SelectedOption {
@@ -54,7 +58,8 @@ void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
 
   int category, id, total, r;
   double x1, y1, x2, y2, val1, val2;
-  char keyword[20], fileName[50], context[15000], color[8];
+  char keyword[MAX_KEYWORD_LEN], fileName[MAX_FILENAME_LEN],
+      context[MAX_CONTEXT_LEN], color[MAX_COLOR_LEN];
 
   // エッジの座標をロード
   FILE *fp = fopen(fn1, "r");
@@ -79,7 +84,8 @@ void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
     return;
   }
   for (int i = 0; i < atoi(searchNum); i++) {
-    fscanf(fp, "%d %s %d %s %14999s %lf %lf %d %s", &category, keyword, &id,
+    fscanf(fp, "%d %511s %d %4095s %262143s %lf %lf %d %31s", &category,
+           keyword, &id,
            fileName, context, &val1, &val2, &r, color);
     cJSON *node = cJSON_CreateObject();
     cJSON_AddNumberToObject(node, "category", category);

@@ -6,8 +6,9 @@
     <head>
         <meta charset="UTF-8">
         <title>k-saito-browsing</title>
-        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.2/dist/semantic.min.css">
+        <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+        <script src="./node_modules/jszip/dist/jszip.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="./node_modules/fomantic-ui-css/semantic.min.css">
 <!-- ==== Begin Style ==== -->
         <style>
             .container-common {
@@ -15,9 +16,315 @@
                 height: 100%;
                 padding: 0px 10px;
             }
+            .top-info-wrap {
+                width: 80vw;
+                margin: 12px auto 16px auto;
+                display: grid;
+                grid-template-columns: 7fr 3fr;
+                gap: 10px;
+                align-items: stretch;
+            }
+            .top-title-block {
+                background: #f3f7fb;
+                border: 1px solid #c9d6e3;
+                border-radius: 8px;
+                padding: 12px 16px;
+                font-size: 28px;
+                font-weight: 700;
+                line-height: 1.35;
+                color: #1f2d3d;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+            .top-link-block {
+                background: #ffffff;
+                border: 1px solid #d6dde5;
+                border-radius: 8px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .top-link-button {
+                width: 100%;
+                height: 100%;
+                text-align: center;
+                border-radius: 8px !important;
+                font-size: 20px !important;
+                font-weight: 700 !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                padding: 0 !important;
+                background: #4f7c59 !important;
+                color: #ffffff !important;
+                margin-right: 0 !important;
+            }
+            .top-link-button:hover {
+                background: #456c4d !important;
+                color: #ffffff !important;
+            }
+            #box-form {
+                width: 80vw;
+                margin: 0 auto;
+            }
+            #box-form .ui.form {
+                background: #f7fbff;
+                border: 1px solid #cfdceb;
+                border-radius: 8px;
+                padding: 12px 14px;
+            }
+            #box-form .ui.form .inline.fields {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                justify-content: flex-start !important;
+                gap: 10px;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            #box-form .ui.form .inline.fields > label {
+                flex: 0 0 auto;
+                margin: 0;
+                white-space: nowrap;
+            }
+            #box-form .ui.form .inline.fields .field {
+                flex: 0 0 auto;
+                width: auto !important;
+                margin: 0;
+            }
+            #box-form .ui.form .inline.fields .field .ui.radio.checkbox {
+                width: auto !important;
+                min-width: 0 !important;
+            }
+            .upload-drop-zone {
+                margin-top: 4px;
+                border: 2px dashed #8fa20f;
+                border-radius: 10px;
+                background: linear-gradient(180deg, #c3d625 0%, #b5cc18 100%);
+                color: #ffffff;
+                padding: 9px 12px;
+                font-size: 13px;
+                line-height: 1.35;
+                user-select: none;
+                cursor: pointer;
+                transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+                display: inline-block;
+                width: fit-content;
+                max-width: 100%;
+            }
+            .upload-drop-main {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 8px;
+                font-size: 15px;
+                font-weight: 700;
+            }
+            .upload-drop-main-left {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+            }
+            .upload-drop-sub {
+                margin-top: 2px;
+                color: rgba(255, 255, 255, 0.92);
+                font-size: 12px;
+            }
+            .upload-file-name {
+                display: inline-block;
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.55);
+                border-radius: 999px;
+                padding: 3px 10px;
+                font-size: 12px;
+                color: #ffffff;
+                white-space: nowrap;
+            }
+            .upload-drop-zone.is-dragover {
+                border-color: #75880b;
+                background: linear-gradient(180deg, #b8cc15 0%, #a4ba10 100%);
+                color: #ffffff;
+                box-shadow: 0 0 0 2px rgba(117, 136, 11, 0.28);
+            }
+            .generation-status {
+                margin-left: 10px;
+                font-size: 13px;
+                color: #2f6f44;
+                vertical-align: middle;
+            }
+            .generation-status.is-error {
+                color: #a33a3a;
+            }
             .container-network {
-                width : 100%;
-                height: 80%;
+                height: var(--graph-area-height, 70vh);
+                border: 2px solid #7f8c8d;
+                border-radius: 8px;
+                background: #ffffff;
+                overflow: hidden;
+            }
+            .graph-workspace {
+                position: relative;
+            }
+            .graph-workspace.is-locked::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(120, 120, 120, 0.35);
+                z-index: 20;
+                pointer-events: auto;
+            }
+            .graph-workspace.is-locked::before {
+                content: "グラフ生成後に操作できます";
+                position: absolute;
+                top: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.78);
+                color: rgba(255, 255, 255, 0.92);
+                padding: 10px 14px;
+                border-radius: 6px;
+                font-weight: 700;
+                font-size: 16px;
+                z-index: 21;
+                pointer-events: none;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+            }
+            .graph-workspace.is-locked.is-experiment-ready .experiment-feature-block {
+                position: relative;
+                z-index: 30;
+                pointer-events: auto;
+                background: #ffffff;
+                border-radius: 6px;
+                padding: 8px 10px 10px 10px;
+            }
+            .network-layout {
+                width: 80vw;
+                margin: 0 auto;
+            }
+            .network-layout.mode-side {
+                display: grid;
+                grid-template-columns: var(--network-pane-width, 65%) 14px minmax(260px, 1fr);
+                gap: 0;
+                align-items: stretch;
+            }
+            #box-network-splitter {
+                display: none;
+            }
+            .network-layout.mode-side #box-network-splitter {
+                display: block;
+                cursor: col-resize;
+                background: linear-gradient(180deg, #89a9c7 0%, #5f86ab 100%);
+                border: 1px solid #3f6489;
+                border-radius: 6px;
+                margin: 0 4px;
+                height: 100%;
+                min-height: 0;
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+                user-select: none;
+                touch-action: none;
+                z-index: 5;
+                position: relative;
+            }
+            .network-layout.mode-side #box-network-splitter.is-dragging {
+                background: linear-gradient(180deg, #6f98bf 0%, #3f739f 100%);
+                box-shadow: 0 0 0 2px rgba(63,115,159,0.25);
+            }
+            .network-layout.mode-side #box-description-pane {
+                border: 2px solid #d0d7de;
+                border-radius: 8px;
+                padding: 8px;
+                background: #ffffff;
+                height: var(--graph-area-height, 70vh);
+                overflow: hidden;
+            }
+            .network-layout.mode-side #box-divider-2 {
+                display: none;
+            }
+            .network-layout.mode-side #box-document-detail {
+                height: 100%;
+                overflow: hidden;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: var(--doc-query-height, 50%) 8px calc(100% - var(--doc-query-height, 50%) - 8px) !important;
+                height: 100% !important;
+                margin: 0 !important;
+                gap: 0 !important;
+                overflow: hidden !important;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container #template-query-column {
+                grid-row: 1;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container #template-doc-splitter {
+                grid-row: 2;
+                display: block;
+                cursor: row-resize;
+                background: linear-gradient(90deg, #9fb7ce 0%, #7698b7 100%);
+                border: 1px solid #5e819f;
+                border-radius: 4px;
+                margin: 2px 0;
+                user-select: none;
+                touch-action: none;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container #template-similar-column {
+                grid-row: 3;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container > .column {
+                width: 100% !important;
+                flex: 1 1 50%;
+                max-width: 100% !important;
+                float: none !important;
+                padding: 0 !important;
+                display: block !important;
+                min-height: 0;
+                margin: 0 !important;
+            }
+            .network-layout.mode-side #box-document-detail .ui.grid.container > .column .ui.segment {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: auto;
+            }
+            .network-layout.mode-full {
+                display: block;
+            }
+            .network-layout.mode-full #box-description-pane {
+                margin-top: 12px;
+                border: none;
+                padding: 0;
+                min-height: 0;
+            }
+            .network-layout.mode-full #box-network-splitter {
+                display: none !important;
+            }
+            .network-layout.mode-full #box-document-detail .ui.grid.container #template-doc-splitter {
+                display: none !important;
+            }
+            #box-network-height-splitter {
+                width: 80vw;
+                height: 10px;
+                margin: 8px auto 0 auto;
+                cursor: row-resize;
+                background: linear-gradient(180deg, #b8c5d1 0%, #93a6b7 100%);
+                border: 1px solid #7f93a5;
+                border-radius: 6px;
+                user-select: none;
+                touch-action: none;
+            }
+            #box-network-height-splitter.is-dragging,
+            .network-layout.mode-side #box-document-detail .ui.grid.container #template-doc-splitter.is-dragging {
+                background: linear-gradient(180deg, #8ea7bc 0%, #6f8ca5 100%);
+            }
+            .container-color-control {
+                width : 80vw;
+                margin: 0 auto;
+                padding: 0 10px;
+                margin-bottom: 10px;
             }
             .circle {
                 opacity: 1;
@@ -29,6 +336,190 @@
             .ribbon-setting {
                 cursor: default !important;
             }
+            .doc-panel-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 3px;
+            }
+            .doc-panel-ribbon {
+                max-width: calc(100% - 44px);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .doc-copy-button {
+                flex: 0 0 auto;
+            }
+            .debug-panel {
+                margin-top: 16px;
+            }
+            #box-debug {
+                width: 80vw;
+                margin: 0 auto;
+            }
+            .experiment-feature-block {
+                margin-top: 10px;
+                padding-top: 12px;
+                border-top: 2px solid #cfd8e1;
+            }
+            .experiment-feature-note {
+                margin: 0 0 8px 0;
+                color: #505e6d;
+                font-size: 13px;
+            }
+            .experiment-run-button {
+                min-height: 44px;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                padding: 10px 16px !important;
+            }
+            .experiment-progress-popup {
+                position: fixed;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 5000;
+                width: min(92vw, 760px);
+                background: rgba(24, 32, 41, 0.96);
+                border: 1px solid #4a6078;
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: #f1f4f8;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            }
+            .experiment-progress-popup.is-hidden {
+                display: none;
+            }
+            .experiment-progress-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            .experiment-progress-title {
+                font-size: 14px;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+            .experiment-progress-cancel {
+                flex: 0 0 auto;
+            }
+            .experiment-progress-message {
+                font-size: 13px;
+                line-height: 1.45;
+                color: rgba(241, 244, 248, 0.95);
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+            .debug-pre {
+                max-height: 320px;
+                overflow: auto;
+                white-space: pre-wrap;
+                word-break: break-word;
+                background: #f8f8f8;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 10px;
+                font-size: 12px;
+            }
+            .network-svg {
+                cursor: grab;
+            }
+            .network-svg.is-panning {
+                cursor: grabbing;
+            }
+            #box-category {
+                width: 80vw;
+                margin: 0 auto;
+            }
+            .color-control-row {
+                display: flex;
+                align-items: stretch;
+                gap: 12px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding: 2px 0 8px 0;
+                margin: 0;
+            }
+            .control-block {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 0 0 auto;
+                min-width: 0;
+            }
+            .control-block-header {
+                font-size: 14px;
+                font-weight: 700;
+                line-height: 1.2;
+                margin: 0;
+            }
+            .control-block-body {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: nowrap;
+            }
+            .color-saturation-slider {
+                width: 240px;
+            }
+            .color-saturation-value {
+                min-width: 52px;
+                text-align: right;
+            }
+            .color-reset-button {
+                flex: 0 0 auto;
+            }
+            .control-block-reset {
+                justify-content: stretch;
+            }
+            .control-block-coords + .control-block-reset {
+                margin-left: -6px;
+            }
+            .control-block-reset .color-reset-button {
+                height: 100%;
+                min-height: 34px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+            .control-block-save {
+                margin-left: auto;
+            }
+            .view-coords-text {
+                min-width: 0;
+                width: auto;
+                display: inline-block;
+                font-family: Consolas, Menlo, Monaco, monospace;
+                font-size: 12px;
+                color: #3b4b5a;
+            }
+            .display-mode-options {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 0 0 auto;
+            }
+            .display-mode-options .field {
+                margin: 0;
+            }
+            .color-control-row .control-block + .control-block {
+                border-left: 1px solid #cfd8e1;
+                padding-left: 10px;
+            }
+            #divider-header {
+                margin-top: 14px !important;
+                margin-bottom: 0 !important;
+            }
+            #box-debug .ui.buttons .button + .button {
+                margin-left: 6px;
+            }
         </style>
 <!-- ==== End Style ==== -->
     </head>
@@ -38,6 +529,15 @@
     <body>
 <!-- ==== Begin Box ==== -->
         <main class="container-common">
+            <section class="top-info-wrap">
+                <div class="top-title-block">
+                    類似貢献度に基づく<br>
+                    文書検索結果の可視化分析ツール
+                </div>
+                <div class="top-link-block">
+                    <a class="ui button top-link-button" href="https://github.com/o-zack-0390/DocumentsNetwork" target="_blank" rel="noopener noreferrer">リポジトリ/説明書</a>
+                </div>
+            </section>
 
             <!-- loaded document -->
             <section id="box-loaded-document"></section>
@@ -48,17 +548,27 @@
             <!-- margin -->
             <section id="box-divider-1"></section>
 
-            <!-- categories -->
-            <section id="box-category"></section>
+            <section id="graph-workspace" class="graph-workspace is-locked">
+                <!-- categories -->
+                <section id="box-category"></section>
 
-            <!-- network -->
-            <section id="box-network" class="container-network"></section>
+                <!-- color control -->
+                <section id="box-color-control" class="container-color-control"></section>
 
-            <!-- margin -->
-            <section id="box-divider-2"></section>
+                <!-- network + document details -->
+                <section id="box-network-layout" class="network-layout mode-side">
+                    <section id="box-network" class="container-network"></section>
+                    <section id="box-network-splitter" aria-label="resize graph and description"></section>
+                    <section id="box-description-pane">
+                        <section id="box-divider-2"></section>
+                        <section id="box-document-detail"></section>
+                    </section>
+                </section>
+                <section id="box-network-height-splitter" aria-label="resize graph area height"></section>
 
-            <!-- document details -->
-            <section id="box-document-detail"></section>
+                <!-- debug panel -->
+                <section id="box-debug"></section>
+            </section>
 
             <!-- loading icon -->
             <section id="box-loader"></section>
@@ -92,10 +602,15 @@
             <!-- file uploader -->
             <form class="ui form" onsubmit="handleFormSubmit(event)">
                 <div class="field">
-                    <input type="file" id="template-invisible-upload" class="ui invisible file input">
-                    <label for="template-invisible-upload" class="ui olive icon button">
-                        <i class="file icon"></i>
-                        Upload query document !
+                    <input type="file" id="template-invisible-upload" class="ui invisible file input" accept=".csv,text/csv">
+                    <label for="template-invisible-upload" id="template-upload-drop-zone" class="upload-drop-zone">
+                        <div class="upload-drop-main">
+                            <span class="upload-drop-main-left">
+                                <i class="file alternate outline icon"></i>
+                                <span>クエリ文章のファイルを選択 / ドラッグアンドドロップ</span>
+                            </span>
+                            <span id="selected-file-name" class="upload-file-name">未選択</span>
+                        </div>
                     </label>
                 </div>
                 <!-- network selector -->
@@ -104,25 +619,25 @@
                     <div class="field">
                         <div class="ui radio checkbox">
                             <input id="network-selector-1" type="radio" name="visual" value="SE" tabindex="0" class="hidden">
-                            <label for="network-selector-1">スペクトラル法</label>
+                            <label for="network-selector-1">スペクトラル法(SE)</label>
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui radio checkbox">
                             <input id="network-selector-2" type="radio" name="visual" value="MDS" tabindex="0" class="hidden">
-                            <label for="network-selector-2">多次元尺度法</label>
+                            <label for="network-selector-2">多次元尺度法(MDS)</label>
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui radio checkbox">
                             <input id="network-selector-3" type="radio" name="visual" value="CE" tabindex="0" class="hidden">
-                            <label for="network-selector-3">クロスエントロピー法</label>
+                            <label for="network-selector-3">クロスエントロピー法(CE)</label>
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui radio checkbox checked">
                             <input id="network-selector-4" type="radio" name="visual" value="KK" checked="" tabindex="0" class="hidden">
-                            <label for="network-selector-4">ばねモデル法</label>
+                            <label for="network-selector-4">ばねモデル法(KK):<strong>推奨</strong></label>
                         </div>
                     </div>
                 </div>
@@ -132,19 +647,19 @@
                     <div class="field">
                         <div class="ui radio checkbox">
                             <input id="graph-selector-1" type="radio" name="graph" value="MST" tabindex="0" class="hidden">
-                            <label for="graph-selector-1">最小全域法</label>
+                            <label for="graph-selector-1">最小全域法(MST)</label>
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui radio checkbox">
                             <input id="graph-selector-2" type="radio" name="graph" value="KNN" checked="" tabindex="0" class="hidden">
-                            <label for="graph-selector-2">K最近傍法</label>
+                            <label for="graph-selector-2">K最近傍法(KNN):<strong>推奨</strong></label>
                         </div>
                     </div>
                     <div class="field">
                         <div class="ui radio checkbox checked">
                             <input id="graph-selector-3" type="radio" name="graph" value="HML" tabindex="0" class="hidden">
-                            <label for="graph-selector-3">MST-hML法</label>
+                            <label for="graph-selector-3">MST-hML法(HML)</label>
                         </div>
                     </div>
                 </div>
@@ -160,7 +675,7 @@
                     <div class="field">
                         <div class="ui radio checkbox checked">
                             <input id="k-selector-2" type="radio" name="num-k" value="100" checked="" tabindex="0" class="hidden">
-                            <label for="k-selector-2">100件</label>
+                            <label for="k-selector-2">100件:<strong>推奨</strong></label>
                         </div>
                     </div>
                     <div class="field">
@@ -176,7 +691,8 @@
                     </div>
                     </div>
                 </div>
-                <button class="ui primary button" type="submit">Submit</button>
+                <button class="ui primary button" type="submit">Submit/Graph Generation!</button>
+                <span id="generation-status" class="generation-status"></span>
             </form>
         </template>
 
@@ -186,7 +702,7 @@
                 <i class=""></i>
                 <!-- Insert text -->
             </h4>
-            <div class="ui large hidden divider"></div>
+            <div class="ui hidden divider" style="margin-bottom: 0;"></div>
         </template>
 
         <!-- mapping box-categories -->
@@ -221,6 +737,7 @@
                         </p>
                     </div>
                 </div>
+                <div id="template-doc-splitter" aria-label="resize query and similar ratio"></div>
                 <div id="template-similar-column" class="column">
                     <div id="template-similar-document" class="ui segment">
                         <a class="ui orange ribbon label ribbon-setting">
@@ -247,9 +764,23 @@
 
             // カテゴリーデータ
             let categories = [];
+            let categorySaturationPercent = 1000;
+            let graphDisplayMode = "side";
 
             // ネットワーク生成時のオプション
             let networkOption = null;
+            let latestGeneratedGraphInfo = null;
+            const visualLabelMap = {
+                SE: "スペクトラル法(SE)",
+                MDS: "多次元尺度法(MDS)",
+                CE: "クロスエントロピー法(CE)",
+                KK: "ばねモデル法(KK)"
+            };
+            const graphLabelMap = {
+                MST: "最小全域法(MST)",
+                KNN: "K最近傍法(KNN)",
+                HML: "MST-hML法(HML)"
+            };
 
             // ボックス id
             const boxLoaderId         = "#box-loader";
@@ -259,7 +790,11 @@
             const boxFormId           = "#box-form";
             const boxCategoryId       = "#box-category";
             const boxNetworkId        = "#box-network";
+            const boxNetworkLayoutId  = "#box-network-layout";
+            const graphWorkspaceId    = "#graph-workspace";
+            const boxColorControlId   = "#box-color-control";
             const boxDocumentDetailId = "#box-document-detail";
+            const boxDebugId          = "#box-debug";
 
             // テンプレート id
             const templateLoaderId         = "#template-loader";
@@ -270,9 +805,882 @@
             const templateNetworkId        = "#template-network";
             const templateDocumentDetailId = "#template-document-detail";
 
-            /* ネットワーク図の生成関数 */
-            async function generateNetWork(uploadDocument)
+            // 通信ログ
+            const requestLogs = [];
+            const maxBytes = {
+                requestBody: 5000000,
+                name: 4095,
+                normalText: 262143,
+                wakachiToken: 511
+            };
+            let detachPanZoomHandlers = null;
+            let resetPanZoomView = null;
+            let detachLayoutSplitterHandlers = null;
+            let detachGraphHeightSplitterHandlers = null;
+            let detachDocRatioSplitterHandlers = null;
+            let viewCoordsState = { tx: 0, ty: 0, scale: 1 };
+            let experimentCancelRequested = false;
+            let selectedUploadFile = null;
+            let last503NoticeAt = 0;
+
+            function getNowIsoString()
             {
+                return new Date().toISOString();
+            }
+
+            function getNowTokyoFileStamp()
+            {
+                const now = new Date();
+                const parts = new Intl.DateTimeFormat("sv-SE", {
+                    timeZone: "Asia/Tokyo",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hourCycle: "h23"
+                }).formatToParts(now);
+                const valueByType = {};
+                parts.forEach((p) => {
+                    if (p.type !== "literal") valueByType[p.type] = p.value;
+                });
+                const ms = String(now.getMilliseconds()).padStart(3, "0");
+                return `${valueByType.year}-${valueByType.month}-${valueByType.day}_${valueByType.hour}-${valueByType.minute}-${valueByType.second}-${ms}`;
+            }
+
+            function toSaturatedColor(hexColor, saturationPercent)
+            {
+                if (!hexColor || !hexColor.startsWith("#")) return hexColor;
+                const clean = hexColor.replace("#", "");
+                const full = clean.length === 3
+                    ? clean.split("").map((ch) => ch + ch).join("")
+                    : clean;
+                if (full.length !== 6) return hexColor;
+
+                const ratio = Math.max(100, Math.min(2000, saturationPercent)) / 100;
+                const r = parseInt(full.slice(0, 2), 16) / 255;
+                const g = parseInt(full.slice(2, 4), 16) / 255;
+                const b = parseInt(full.slice(4, 6), 16) / 255;
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const delta = max - min;
+                const lightness = (max + min) / 2;
+                let hue = 0;
+                let saturation = 0;
+
+                if (delta !== 0) {
+                    saturation = delta / (1 - Math.abs(2 * lightness - 1));
+                    if (max === r) hue = ((g - b) / delta) % 6;
+                    else if (max === g) hue = (b - r) / delta + 2;
+                    else hue = (r - g) / delta + 4;
+                    hue *= 60;
+                    if (hue < 0) hue += 360;
+                }
+
+                saturation = Math.min(1, saturation * ratio);
+
+                const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+                const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+                const m = lightness - chroma / 2;
+
+                let rr = 0, gg = 0, bb = 0;
+                if (hue < 60) { rr = chroma; gg = x; bb = 0; }
+                else if (hue < 120) { rr = x; gg = chroma; bb = 0; }
+                else if (hue < 180) { rr = 0; gg = chroma; bb = x; }
+                else if (hue < 240) { rr = 0; gg = x; bb = chroma; }
+                else if (hue < 300) { rr = x; gg = 0; bb = chroma; }
+                else { rr = chroma; gg = 0; bb = x; }
+
+                const outR = Math.round((rr + m) * 255);
+                const outG = Math.round((gg + m) * 255);
+                const outB = Math.round((bb + m) * 255);
+                return `#${outR.toString(16).padStart(2, "0")}${outG.toString(16).padStart(2, "0")}${outB.toString(16).padStart(2, "0")}`;
+            }
+
+            function applyCategorySaturation()
+            {
+                const targets = document.querySelectorAll("[data-base-color]");
+                targets.forEach((el) => {
+                    const baseColor = el.getAttribute("data-base-color");
+                    const saturatedColor = toSaturatedColor(baseColor, categorySaturationPercent);
+                    if (el.tagName.toLowerCase() === "circle") {
+                        el.setAttribute("fill", saturatedColor);
+                    } else if (el.classList.contains("keyword-highlight")) {
+                        el.style.backgroundColor = saturatedColor;
+                    } else {
+                        el.style.color = saturatedColor;
+                    }
+                });
+            }
+
+            function generateColorControl()
+            {
+                const boxColorControl = document.querySelector(boxColorControlId);
+                if (!boxColorControl) return;
+
+                boxColorControl.innerHTML = `
+                    <div class="ui segment">
+                        <div class="color-control-row">
+                            <div class="control-block">
+                                <div class="control-block-header">Category Color Saturation</div>
+                                <div class="control-block-body">
+                                    <input id="category-saturation-slider" class="color-saturation-slider" type="range" min="100" max="2000" value="${categorySaturationPercent}">
+                                    <span id="category-saturation-value" class="color-saturation-value">${categorySaturationPercent}%</span>
+                                </div>
+                            </div>
+                            <div class="control-block">
+                                <div class="control-block-header">表示方法</div>
+                                <div class="control-block-body display-mode-options">
+                                    <div class="field">
+                                        <div class="ui radio checkbox checked">
+                                            <input id="display-selector-1" type="radio" name="display-mode" value="side" ${graphDisplayMode === "side" ? "checked" : ""} tabindex="0" class="hidden">
+                                            <label for="display-selector-1">右横に説明表示</label>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="ui radio checkbox">
+                                            <input id="display-selector-2" type="radio" name="display-mode" value="full" ${graphDisplayMode === "full" ? "checked" : ""} tabindex="0" class="hidden">
+                                            <label for="display-selector-2">画面横幅いっぱい</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="control-block control-block-coords">
+                                <div class="control-block-header">表示中の座標</div>
+                                <div class="control-block-body">
+                                    <span id="view-coords-text" class="view-coords-text"></span>
+                                </div>
+                            </div>
+                            <div class="control-block control-block-reset">
+                                <button id="reset-network-view" class="ui button color-reset-button">表示位置リセット</button>
+                            </div>
+                            <div class="control-block control-block-reset control-block-save">
+                                <button id="save-svg-view" class="ui primary button color-reset-button">グラフをSVG保存</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const slider = boxColorControl.querySelector("#category-saturation-slider");
+                const valueLabel = boxColorControl.querySelector("#category-saturation-value");
+                const resetButton = boxColorControl.querySelector("#reset-network-view");
+                const saveSvgButton = boxColorControl.querySelector("#save-svg-view");
+                slider.addEventListener("input", () => {
+                    categorySaturationPercent = Number(slider.value);
+                    valueLabel.textContent = `${categorySaturationPercent}%`;
+                    applyCategorySaturation();
+                });
+                bindDisplayModeSelector();
+                resetButton.addEventListener("click", () => {
+                    if (typeof resetPanZoomView === "function") resetPanZoomView();
+                });
+                saveSvgButton.addEventListener("click", saveCurrentSvg);
+                updateViewCoordsText();
+            }
+
+            function updateViewCoordsText()
+            {
+                const el = document.querySelector("#view-coords-text");
+                if (!el) return;
+                const zoomPercent = Math.round(viewCoordsState.scale * 100);
+                const tx = Math.round(viewCoordsState.tx * 10) / 10;
+                const ty = Math.round(viewCoordsState.ty * 10) / 10;
+                el.textContent = `x:${tx} / y:${ty} / zoom:${zoomPercent}%`;
+            }
+
+            function buildCurrentGraphSvgSource()
+            {
+                const svg = document.querySelector(`${boxNetworkId} svg`);
+                if (!svg) return null;
+                const viewportGroup = svg.querySelector("g.network-viewport");
+                if (!viewportGroup) return null;
+
+                const bounds = getGraphBounds(viewportGroup);
+                if (!bounds) return null;
+                const pad = 20;
+                const exportWidth = Math.max(1, Math.ceil(bounds.width + pad * 2));
+                const exportHeight = Math.max(1, Math.ceil(bounds.height + pad * 2));
+                const viewBoxX = bounds.minX - pad;
+                const viewBoxY = bounds.minY - pad;
+
+                const exportSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                exportSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+                exportSvg.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+                exportSvg.setAttribute("width", String(exportWidth));
+                exportSvg.setAttribute("height", String(exportHeight));
+                exportSvg.setAttribute("viewBox", `${viewBoxX} ${viewBoxY} ${exportWidth} ${exportHeight}`);
+                const clonedViewport = viewportGroup.cloneNode(true);
+                clonedViewport.removeAttribute("transform");
+                exportSvg.appendChild(clonedViewport);
+                return `<?xml version="1.0" encoding="UTF-8"?>\n${exportSvg.outerHTML}`;
+            }
+
+            function saveCurrentSvg()
+            {
+                const source = buildCurrentGraphSvgSource();
+                if (!source) {
+                    alert("保存できるグラフがありません。");
+                    return;
+                }
+                const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+                const stamp = getNowTokyoFileStamp();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, "_");
+                const name = latestGeneratedGraphInfo
+                    ? `${safe(latestGeneratedGraphInfo.fileName)}_${safe(latestGeneratedGraphInfo.visual)}_${safe(latestGeneratedGraphInfo.graph)}_${safe(latestGeneratedGraphInfo.search)}_${stamp}.svg`
+                    : `network-graph-${stamp}.svg`;
+                link.download = name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            function getCurrentSelectedFileName()
+            {
+                const file = getSelectedUploadFile();
+                return file ? file.name : "未選択";
+            }
+
+            function getSelectedUploadFile()
+            {
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+                return file || selectedUploadFile || null;
+            }
+
+            function updateExperimentReadyState()
+            {
+                const workspace = document.querySelector(graphWorkspaceId);
+                if (!workspace) return;
+                const hasFile = Boolean(getSelectedUploadFile());
+                workspace.classList.toggle("is-experiment-ready", hasFile);
+            }
+
+            function ensureExperimentProgressPopup()
+            {
+                let popup = document.querySelector("#experiment-progress-popup");
+                if (popup) return popup;
+
+                popup = document.createElement("section");
+                popup.id = "experiment-progress-popup";
+                popup.className = "experiment-progress-popup is-hidden";
+                popup.innerHTML = `
+                    <div class="experiment-progress-header">
+                        <div class="experiment-progress-title">全オプション実験の進捗</div>
+                        <button id="experiment-cancel-button" class="ui tiny red button experiment-progress-cancel" type="button">中止</button>
+                    </div>
+                    <div id="experiment-progress-message" class="experiment-progress-message"></div>
+                `;
+                document.body.appendChild(popup);
+
+                const cancelButton = popup.querySelector("#experiment-cancel-button");
+                cancelButton.addEventListener("click", () => {
+                    experimentCancelRequested = true;
+                    cancelButton.disabled = true;
+                    const message = popup.querySelector("#experiment-progress-message");
+                    if (message) {
+                        message.textContent = `${message.textContent}\n中止リクエストを受け付けました。現在の処理完了後に停止します。`;
+                    }
+                });
+                return popup;
+            }
+
+            function showExperimentProgressPopup(message)
+            {
+                const popup = ensureExperimentProgressPopup();
+                const cancelButton = popup.querySelector("#experiment-cancel-button");
+                if (cancelButton) cancelButton.disabled = false;
+                popup.classList.remove("is-hidden");
+                const msgEl = popup.querySelector("#experiment-progress-message");
+                if (msgEl) msgEl.textContent = message || "";
+            }
+
+            function updateExperimentProgressPopup(message)
+            {
+                const popup = ensureExperimentProgressPopup();
+                const msgEl = popup.querySelector("#experiment-progress-message");
+                if (msgEl) msgEl.textContent = message || "";
+            }
+
+            function hideExperimentProgressPopup()
+            {
+                const popup = document.querySelector("#experiment-progress-popup");
+                if (!popup) return;
+                popup.classList.add("is-hidden");
+            }
+
+            async function runAllCombinationsExperiment()
+            {
+                if (!window.JSZip) {
+                    alert("JSZip が読み込まれていません。");
+                    return;
+                }
+
+                const file = getSelectedUploadFile();
+                if (!file) {
+                    alert("先にクエリ文書を選択してください。");
+                    return;
+                }
+
+                const shouldStart = window.confirm("これは実験用機能です。この作業には時間がかかります。");
+                if (!shouldStart) return;
+
+                const visuals = ["SE", "MDS", "CE", "KK"];
+                const graphs = ["MST", "KNN", "HML"];
+                const searches = ["50", "100", "150", "200"];
+                const total = visuals.length * graphs.length * searches.length;
+
+                const zip = new JSZip();
+                const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, "_");
+                const rootStamp = getNowTokyoFileStamp();
+
+                setGraphWorkspaceLocked(true);
+                experimentCancelRequested = false;
+                showExperimentProgressPopup(`開始準備中...\n対象ファイル: ${file.name}\n進捗: 0/${total}`);
+                try {
+                    setGenerationStatus(`全オプション実験を実行中... (0/${total})`);
+
+                    const reader = new FileReader();
+                    reader.readAsText(file, "UTF-8");
+                    const uploadedText = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = (error) => reject(error);
+                    });
+                    const wakachiText = await getWakachiSentence(uploadedText);
+                    const uploadDocument = {
+                        name: `1 ${file.name}`,
+                        normalText: uploadedText,
+                        wakachiText: wakachiText
+                    };
+
+                    let done = 0;
+                    for (const visual of visuals) {
+                        for (const graph of graphs) {
+                            for (const search of searches) {
+                                if (experimentCancelRequested) {
+                                    throw new Error("EXPERIMENT_CANCELLED");
+                                }
+                                const option = { visual, graph, search };
+                                networkOption = option;
+                                const comboStart = performance.now();
+                                const result = await generateNetWork(uploadDocument, option);
+                                const comboMs = performance.now() - comboStart;
+                                const comboSec = Number((comboMs / 1000).toFixed(2));
+                                done += 1;
+                                setGenerationStatus(`全オプション実験を実行中... (${done}/${total})`);
+                                updateExperimentProgressPopup(
+                                    `対象ファイル: ${file.name}\n進捗: ${done}/${total}\n完了: ${visual} / ${graph} / ${search}件`
+                                );
+
+                                const visualLabel = visualLabelMap[option.visual] || option.visual;
+                                const graphLabel = graphLabelMap[option.graph] || option.graph;
+                                updateLogGeneration(result.logRecord, {
+                                    fileName: file.name,
+                                    visual: visualLabel,
+                                    graph: graphLabel,
+                                    search: `${option.search}件`,
+                                    elapsedMs: Math.round(comboMs),
+                                    elapsedSeconds: comboSec,
+                                    experimentProgress: {
+                                        done,
+                                        total
+                                    }
+                                });
+
+                                const dirStamp = getNowTokyoFileStamp();
+                                const dirName = `${visual}_${graph}_${search}件_${dirStamp}`;
+                                const dir = zip.folder(dirName);
+                                dir.file("request-response-log.json", JSON.stringify(result.logRecord, null, 2));
+
+                                if (result.success) {
+                                    const svgSource = buildCurrentGraphSvgSource();
+                                    if (svgSource) dir.file("graph.svg", svgSource);
+                                } else {
+                                    dir.file("graph.svg", "<!-- graph generation failed -->");
+                                }
+                            }
+                        }
+                    }
+
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+                    const url = URL.createObjectURL(zipBlob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `実験_${safe(file.name)}_${rootStamp}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    setGenerationStatus(`全オプション実験が完了しました (${total}/${total})`);
+                    updateExperimentProgressPopup(`全オプション実験が完了しました。\n対象ファイル: ${file.name}\n進捗: ${total}/${total}`);
+                } catch (error) {
+                    if (String(error && error.message) === "EXPERIMENT_CANCELLED") {
+                        setGenerationStatus("全オプション実験を中止しました。", true);
+                        updateExperimentProgressPopup("全オプション実験を中止しました。");
+                    } else {
+                        setGenerationStatus("全オプション実験でエラーが発生しました。", true);
+                        updateExperimentProgressPopup(`全オプション実験でエラーが発生しました。\n${String(error)}`);
+                    }
+                    console.error(error);
+                } finally {
+                    setGraphWorkspaceLocked(false);
+                    setTimeout(() => {
+                        hideExperimentProgressPopup();
+                    }, 1800);
+                    renderDebugPanel();
+                }
+            }
+
+            function getGraphBounds(viewportGroup)
+            {
+                let minX = Number.POSITIVE_INFINITY;
+                let minY = Number.POSITIVE_INFINITY;
+                let maxX = Number.NEGATIVE_INFINITY;
+                let maxY = Number.NEGATIVE_INFINITY;
+
+                const includePoint = (x, y) => {
+                    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                };
+
+                viewportGroup.querySelectorAll("line").forEach((line) => {
+                    includePoint(Number(line.getAttribute("x1")), Number(line.getAttribute("y1")));
+                    includePoint(Number(line.getAttribute("x2")), Number(line.getAttribute("y2")));
+                });
+                viewportGroup.querySelectorAll("circle").forEach((circle) => {
+                    const cx = Number(circle.getAttribute("cx"));
+                    const cy = Number(circle.getAttribute("cy"));
+                    const r = Number(circle.getAttribute("r")) || 0;
+                    includePoint(cx - r, cy - r);
+                    includePoint(cx + r, cy + r);
+                });
+
+                if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+                    return null;
+                }
+                const width = Math.max(1, maxX - minX);
+                const height = Math.max(1, maxY - minY);
+                return { minX, minY, maxX, maxY, width, height };
+            }
+
+            function applyGraphDisplayMode(mode)
+            {
+                const boxNetworkLayout = document.querySelector(boxNetworkLayoutId);
+                if (!boxNetworkLayout) return;
+                graphDisplayMode = mode === "full" ? "full" : "side";
+                boxNetworkLayout.classList.remove("mode-side", "mode-full");
+                boxNetworkLayout.classList.add(graphDisplayMode === "full" ? "mode-full" : "mode-side");
+                setupDocRatioSplitter();
+            }
+
+            function setGraphWorkspaceLocked(locked)
+            {
+                const workspace = document.querySelector(graphWorkspaceId);
+                if (!workspace) return;
+                workspace.classList.toggle("is-locked", Boolean(locked));
+                updateExperimentReadyState();
+            }
+
+            function setupLayoutSplitter()
+            {
+                if (typeof detachLayoutSplitterHandlers === "function") {
+                    detachLayoutSplitterHandlers();
+                    detachLayoutSplitterHandlers = null;
+                }
+
+                const layout = document.querySelector(boxNetworkLayoutId);
+                const splitter = document.querySelector("#box-network-splitter");
+                if (!layout || !splitter) return;
+
+                let dragging = false;
+                let currentWidth = null;
+                const onMouseDown = (event) => {
+                    if (event.button !== 0) return;
+                    if (!layout.classList.contains("mode-side")) return;
+                    dragging = true;
+                    splitter.classList.add("is-dragging");
+                    event.preventDefault();
+                };
+                const onMouseMove = (event) => {
+                    if (!dragging) return;
+                    const rect = layout.getBoundingClientRect();
+                    const minPx = 420;
+                    const maxPx = Math.max(minPx, rect.width - 260 - 14 - 20);
+                    const leftPx = Math.max(minPx, Math.min(maxPx, event.clientX - rect.left));
+                    currentWidth = leftPx;
+                    layout.style.setProperty("--network-pane-width", `${leftPx}px`);
+                };
+                const onMouseUp = () => {
+                    dragging = false;
+                    splitter.classList.remove("is-dragging");
+                };
+
+                // 初期値を確実に適用（計算結果が取得できる場合）
+                const rect = layout.getBoundingClientRect();
+                if (!Number.isNaN(rect.width) && rect.width > 0) {
+                    const initialPx = Math.max(420, Math.round(rect.width * 0.65));
+                    currentWidth = initialPx;
+                    layout.style.setProperty("--network-pane-width", `${initialPx}px`);
+                }
+
+                splitter.addEventListener("mousedown", onMouseDown);
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", onMouseUp);
+
+                detachLayoutSplitterHandlers = () => {
+                    splitter.removeEventListener("mousedown", onMouseDown);
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", onMouseUp);
+                };
+            }
+
+            function setupGraphHeightSplitter()
+            {
+                if (typeof detachGraphHeightSplitterHandlers === "function") {
+                    detachGraphHeightSplitterHandlers();
+                    detachGraphHeightSplitterHandlers = null;
+                }
+
+                const splitter = document.querySelector("#box-network-height-splitter");
+                const layout = document.querySelector(boxNetworkLayoutId);
+                if (!splitter || !layout) return;
+
+                let dragging = false;
+                const onMouseDown = (event) => {
+                    if (event.button !== 0) return;
+                    dragging = true;
+                    splitter.classList.add("is-dragging");
+                    event.preventDefault();
+                };
+                const onMouseMove = (event) => {
+                    if (!dragging) return;
+                    const rect = layout.getBoundingClientRect();
+                    const minH = 340;
+                    const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.9));
+                    const nextHeight = Math.max(minH, Math.min(maxH, Math.round(event.clientY - rect.top)));
+                    document.documentElement.style.setProperty("--graph-area-height", `${nextHeight}px`);
+                };
+                const onMouseUp = () => {
+                    dragging = false;
+                    splitter.classList.remove("is-dragging");
+                };
+
+                splitter.addEventListener("mousedown", onMouseDown);
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", onMouseUp);
+
+                detachGraphHeightSplitterHandlers = () => {
+                    splitter.removeEventListener("mousedown", onMouseDown);
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", onMouseUp);
+                };
+            }
+
+            function setupDocRatioSplitter()
+            {
+                if (typeof detachDocRatioSplitterHandlers === "function") {
+                    detachDocRatioSplitterHandlers();
+                    detachDocRatioSplitterHandlers = null;
+                }
+
+                const grid = document.querySelector(`${boxDocumentDetailId} .ui.grid.container`);
+                const splitter = grid ? grid.querySelector("#template-doc-splitter") : null;
+                if (!grid || !splitter) return;
+
+                let dragging = false;
+                const onMouseDown = (event) => {
+                    if (event.button !== 0) return;
+                    if (!document.querySelector(boxNetworkLayoutId)?.classList.contains("mode-side")) return;
+                    dragging = true;
+                    splitter.classList.add("is-dragging");
+                    event.preventDefault();
+                };
+                const onMouseMove = (event) => {
+                    if (!dragging) return;
+                    const rect = grid.getBoundingClientRect();
+                    const minPane = 90;
+                    const splitterHeight = 8;
+                    const maxTop = rect.height - minPane - splitterHeight;
+                    const topHeight = Math.max(minPane, Math.min(maxTop, event.clientY - rect.top));
+                    const topPct = (topHeight / rect.height) * 100;
+                    grid.style.setProperty("--doc-query-height", `${topPct}%`);
+                };
+                const onMouseUp = () => {
+                    dragging = false;
+                    splitter.classList.remove("is-dragging");
+                };
+
+                splitter.addEventListener("mousedown", onMouseDown);
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", onMouseUp);
+
+                detachDocRatioSplitterHandlers = () => {
+                    splitter.removeEventListener("mousedown", onMouseDown);
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", onMouseUp);
+                };
+            }
+
+            function getUtf8ByteLength(text)
+            {
+                return new TextEncoder().encode(text).length;
+            }
+
+            function getMaxWakachiTokenBytes(wakachiText)
+            {
+                const tokens = wakachiText.split(/\s+/).filter(Boolean);
+                let maxTokenBytes = 0;
+                for (const token of tokens) {
+                    const tokenBytes = getUtf8ByteLength(token);
+                    if (tokenBytes > maxTokenBytes) maxTokenBytes = tokenBytes;
+                }
+                return maxTokenBytes;
+            }
+
+            function validateUploadDocument(uploadDocument, requestPayload)
+            {
+                const errors = [];
+                const nameBytes = getUtf8ByteLength(uploadDocument.name);
+                const normalTextBytes = getUtf8ByteLength(uploadDocument.normalText);
+                const maxWakachiTokenBytes = getMaxWakachiTokenBytes(uploadDocument.wakachiText);
+                const requestBytes = getUtf8ByteLength(JSON.stringify(requestPayload));
+
+                if (nameBytes > maxBytes.name) {
+                    errors.push(`name が上限を超えています (${nameBytes} bytes / 上限 ${maxBytes.name} bytes)`);
+                }
+                if (normalTextBytes > maxBytes.normalText) {
+                    errors.push(`normalText が上限を超えています (${normalTextBytes} bytes / 上限 ${maxBytes.normalText} bytes)`);
+                }
+                if (maxWakachiTokenBytes > maxBytes.wakachiToken) {
+                    errors.push(`wakachiText 内の1トークンが上限を超えています (最大 ${maxWakachiTokenBytes} bytes / 上限 ${maxBytes.wakachiToken} bytes)`);
+                }
+                if (requestBytes > maxBytes.requestBody) {
+                    errors.push(`リクエスト全体が大きすぎます (${requestBytes} bytes / 推奨上限 ${maxBytes.requestBody} bytes)`);
+                }
+
+                return {
+                    valid: errors.length === 0,
+                    errors: errors
+                };
+            }
+
+            function getContentType(headers)
+            {
+                return headers.get("Content-Type") || headers.get("content-type") || "";
+            }
+
+            function createLogRecord(requestPayload)
+            {
+                const record = {
+                    timestamp: getNowIsoString(),
+                    request: requestPayload,
+                    response: null,
+                    error: null
+                };
+                requestLogs.push(record);
+                renderDebugPanel();
+                return record;
+            }
+
+            function updateLogResponse(record, response, responseText, responseJson)
+            {
+                record.response = {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    contentType: getContentType(response.headers),
+                    body: responseJson ?? responseText
+                };
+                renderDebugPanel();
+            }
+
+            function updateLogError(record, errorMessage)
+            {
+                record.error = {
+                    message: errorMessage,
+                    at: getNowIsoString()
+                };
+                renderDebugPanel();
+            }
+
+            function updateLogGeneration(record, generation)
+            {
+                record.generation = generation;
+                renderDebugPanel();
+            }
+
+            function downloadJsonFile(data, filePrefix)
+            {
+                const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: "application/json;charset=utf-8"
+                });
+                const stamp = getNowTokyoFileStamp();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `${filePrefix}-${stamp}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            function saveLatestLog()
+            {
+                if (requestLogs.length === 0) {
+                    alert("保存できるログがありません。");
+                    return;
+                }
+                downloadJsonFile(requestLogs[requestLogs.length - 1], "network-log-latest");
+            }
+
+            function saveAllLogs()
+            {
+                if (requestLogs.length === 0) {
+                    alert("保存できるログがありません。");
+                    return;
+                }
+                downloadJsonFile(requestLogs, "network-log-all");
+            }
+
+            function renderDebugPanel()
+            {
+                const boxDebug = document.querySelector(boxDebugId);
+                if (!boxDebug) return;
+                const currentFileName = getCurrentSelectedFileName();
+                const currentFileNameText = String(currentFileName)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+
+                const latest = requestLogs.length > 0 ? requestLogs[requestLogs.length - 1] : null;
+                const requestText = latest ? JSON.stringify(latest.request, null, 2) : "(no request yet)";
+                const responseText = latest
+                    ? JSON.stringify(latest.response, null, 2)
+                    : "(no response yet)";
+                const errorText = latest && latest.error
+                    ? JSON.stringify(latest.error, null, 2)
+                    : "(no error)";
+                const generationText = latest && latest.generation
+                    ? JSON.stringify(latest.generation, null, 2)
+                    : "(no generation data yet)";
+                const categorySummary = getCategorySummaryFromResponse(latest ? latest.response : null);
+                const categorySummaryText = categorySummary
+                    ? JSON.stringify(categorySummary, null, 2)
+                    : "(no category info yet)";
+
+                boxDebug.innerHTML = `
+                    <div class="ui segment debug-panel">
+                        <div class="ui clearing header">
+                            Request/Response Log
+                            <div class="ui right floated buttons">
+                                <button class="ui primary button" id="save-latest-log">Save latest</button>
+                                <button class="ui primary button" id="save-all-logs">Save all (${requestLogs.length})</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: -6px; margin-bottom: 10px; color: #4f5f6f; font-size: 13px;">
+                            Apache（CのCGI）とのリクエストとレスポンスを記録します。<br>
+                            Save latest / Save all でグラフ生成ログを含むJSONを保存できます。
+                        </div>
+                        <div class="ui two column stackable grid">
+                            <div class="column">
+                                <h5 class="ui header">Request payload</h5>
+                                <pre id="debug-request" class="debug-pre"></pre>
+                            </div>
+                            <div class="column">
+                                <h5 class="ui header">Response payload</h5>
+                                <pre id="debug-response" class="debug-pre"></pre>
+                            </div>
+                        </div>
+                        <div class="ui hidden divider"></div>
+                        <h5 class="ui header">Graph generation</h5>
+                        <pre id="debug-generation" class="debug-pre"></pre>
+                        <div class="ui hidden divider"></div>
+                        <h5 class="ui header">Target categories (from response)</h5>
+                        <pre id="debug-category-summary" class="debug-pre"></pre>
+                        <div class="ui hidden divider"></div>
+                        <h5 class="ui header">Error</h5>
+                        <pre id="debug-error" class="debug-pre"></pre>
+                        <div class="experiment-feature-block">
+                            <p class="experiment-feature-note">
+                                実験用機能です。48通り（Visual 4 × Graph 3 × Search 4）の一括実行を行います。
+                            </p>
+                            <button class="ui teal button experiment-run-button" id="run-all-combinations">
+                                「${currentFileNameText}」に対して全オプション実験(48通り)を実行してZIP保存
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                boxDebug.querySelector("#debug-request").textContent = requestText;
+                boxDebug.querySelector("#debug-response").textContent = responseText;
+                boxDebug.querySelector("#debug-generation").textContent = generationText;
+                boxDebug.querySelector("#debug-category-summary").textContent = categorySummaryText;
+                boxDebug.querySelector("#debug-error").textContent = errorText;
+                boxDebug.querySelector("#save-latest-log").onclick = saveLatestLog;
+                boxDebug.querySelector("#save-all-logs").onclick = saveAllLogs;
+                boxDebug.querySelector("#run-all-combinations").onclick = runAllCombinationsExperiment;
+            }
+
+            function setGenerationStatus(text, isError = false)
+            {
+                const status = document.querySelector("#generation-status");
+                if (!status) return;
+                status.textContent = text || "";
+                status.classList.toggle("is-error", Boolean(isError));
+            }
+
+            function show503RecoveryNoticeIfNeeded()
+            {
+                const now = Date.now();
+                // 連続表示を抑止（同一操作中の多重アラート回避）
+                if (now - last503NoticeAt < 30000) return;
+                last503NoticeAt = now;
+                alert("Apache側で503エラーが発生しました。まれに発生するため、改善しない場合は Docker コンテナを再起動（docker compose down → docker compose up -d --build）してください。");
+            }
+
+            function getCategorySummaryFromResponse(response)
+            {
+                if (!response || !response.body || typeof response.body !== "object") return null;
+                if (!Array.isArray(response.body.nodes)) return null;
+
+                const counts = new Map();
+                response.body.nodes.forEach((node) => {
+                    const key = (node && typeof node.keyword === "string" && node.keyword.trim() !== "")
+                        ? node.keyword.trim()
+                        : "(unknown)";
+                    counts.set(key, (counts.get(key) || 0) + 1);
+                });
+
+                const names = Array.from(counts.keys()).sort((a, b) => a.localeCompare(b, "ja"));
+                return {
+                    categoryCount: names.length,
+                    categoryNames: names
+                };
+            }
+
+            /* ネットワーク図の生成関数 */
+            async function generateNetWork(uploadDocument, optionOverride = null)
+            {
+                const option = optionOverride || networkOption;
+                const requestPayload = {
+                    name: uploadDocument.name,
+                    normalText: uploadDocument.normalText,
+                    wakachiText: uploadDocument.wakachiText,
+                    networkType: option.visual,
+                    graphType: option.graph,
+                    searchNum: option.search
+                };
+                const logRecord = createLogRecord(requestPayload);
+
                 // バックエンド側からデータを取得
                 try {
                     const response = await fetch(pathKkData, {
@@ -281,37 +1689,119 @@
                         headers: {
                             "Content-Type": "text/plain" 
                         },
-                        body: JSON.stringify({
-                            name: uploadDocument.name,
-                            normalText: uploadDocument.normalText,
-                            wakachiText: uploadDocument.wakachiText,
-                            networkType: networkOption.visual,
-                            graphType: networkOption.graph,
-                            searchNum: networkOption.search
-                        }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        generateComponents(data); // DOM を生成
-                    })
+                        body: JSON.stringify(requestPayload),
+                    });
+
+                    const responseText = await response.text();
+                    let responseJson = null;
+                    try {
+                        responseJson = responseText ? JSON.parse(responseText) : null;
+                    } catch (jsonError) {
+                        responseJson = null;
+                    }
+
+                    updateLogResponse(logRecord, response, responseText, responseJson);
+
+                    if (!response.ok) {
+                        if (response.status === 503) {
+                            show503RecoveryNoticeIfNeeded();
+                        }
+                        updateLogError(logRecord, `HTTP ${response.status} ${response.statusText}`);
+                        return { success: false, logRecord };
+                    }
+
+                    if (!responseJson) {
+                        updateLogError(logRecord, "JSON parse failed: response is not valid JSON.");
+                        return { success: false, logRecord };
+                    }
+
+                    generateComponents(responseJson); // DOM を生成
+                    return { success: true, logRecord, responseJson };
                 }
                 catch (error) {
+                    updateLogError(logRecord, String(error));
                     console.error('Fetch error:', error);
+                    return { success: false, logRecord };
                 }
             }
 
             /* ネットワーク図の生成関数 */
             function generateComponents(knnDatas)
             {
+                // 実験ループ実行時も前回描画を確実に破棄してから再描画する
+                clearCategory();
+                clearNetwork();
+                clearDocumentDetail();
+                documents.length = 0;
                 generateDivider();
                 generateDocumentForm("visible");
                 generateCategories(knnDatas.nodes); // ノードの要素にカテゴリー情報が存在する
                 generateEdges(knnDatas.edges);
                 generateNodes(knnDatas.nodes);
+                applyCategorySaturation();
+                setGraphWorkspaceLocked(false);
             }
 
             /* クエリ文書の内容を DOM に挿入するメソッド */
-            const generateQueryDocumentDetail = (docTitle, docText) =>
+            function htmlToPlainText(html)
+            {
+                const temp = document.createElement("div");
+                temp.innerHTML = html || "";
+                return temp.textContent || temp.innerText || "";
+            }
+
+            async function copyTextToClipboard(text)
+            {
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    }
+                    const temp = document.createElement("textarea");
+                    temp.value = text;
+                    temp.style.position = "fixed";
+                    temp.style.left = "-9999px";
+                    document.body.appendChild(temp);
+                    temp.focus();
+                    temp.select();
+                    const ok = document.execCommand("copy");
+                    document.body.removeChild(temp);
+                    return ok;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            function setDocumentPanelHeader(panelEl, prefixLabel, fileName, copyText, ribbonClassName)
+            {
+                const oldRibbon = panelEl.querySelector("a");
+                if (oldRibbon) oldRibbon.remove();
+                const oldDivider = panelEl.querySelector(".ui.hidden.divider");
+                if (oldDivider) oldDivider.remove();
+
+                const header = document.createElement("div");
+                header.className = "doc-panel-header";
+
+                const title = document.createElement("a");
+                title.className = `ui ribbon label ribbon-setting doc-panel-ribbon ${ribbonClassName || ""}`.trim();
+                title.textContent = `${prefixLabel}：${fileName}`;
+
+                const copyButton = document.createElement("button");
+                copyButton.className = "ui icon button mini doc-copy-button";
+                copyButton.type = "button";
+                copyButton.title = "コピー";
+                copyButton.innerHTML = '<i class="copy outline icon"></i>';
+                copyButton.addEventListener("click", async () => {
+                    const ok = await copyTextToClipboard(copyText);
+                    if (!ok) alert("コピーに失敗しました。");
+                });
+
+                header.appendChild(title);
+                header.appendChild(copyButton);
+                panelEl.insertBefore(header, panelEl.firstChild);
+            }
+
+            const generateQueryDocumentDetail = (docFileName, docText) =>
             {
                 // ブロック id
                 const templateQueryColumnId   = "#template-query-column";
@@ -326,7 +1816,7 @@
                 const cloneQueryDocument  = document.importNode(templateQueryDocument, true);
 
                 // 文書内容を設定
-                cloneQueryDocument.querySelector("a").innerHTML = docTitle;
+                setDocumentPanelHeader(cloneQueryDocument, "クエリ文書", docFileName, htmlToPlainText(docText), "red");
                 cloneQueryDocument.querySelector("p").innerHTML = docText;
                 cloneDocumentDetail.querySelector(templateQueryColumnId).innerHTML = '';
                 cloneDocumentDetail.querySelector(templateQueryColumnId).appendChild(cloneQueryDocument);
@@ -335,6 +1825,7 @@
                 const boxDocumentDetail = document.querySelector(boxDocumentDetailId);
                 boxDocumentDetail.innerHTML = '';
                 boxDocumentDetail.appendChild(cloneDocumentDetail);
+                setupDocRatioSplitter();
             }
 
             /* 類似文書の内容を DOM に挿入するメソッド */
@@ -355,7 +1846,7 @@
                 const targetDoc = documents.find((doc) => doc.name === docName);
 
                 // 文書内容を設定
-                cloneSimilarDocument.querySelector("a").innerHTML = `${targetDoc.keyword} ${targetDoc.category} ${targetDoc.name}`;
+                setDocumentPanelHeader(cloneSimilarDocument, "クリックした類似文書", targetDoc.name, htmlToPlainText(targetDoc.text), "orange");
                 cloneSimilarDocument.querySelector("p").innerHTML = targetDoc.text;
 
                 // ボックスに挿入
@@ -369,7 +1860,11 @@
                 categories.sort((a, b) => {return Number(b.keyword.length) - Number(a.keyword.length)});
                 for(let category of categories) {
                     const regex = new RegExp(`(${category.keyword})`, "gi"); // 大文字小文字を区別しない
-                    docText = docText.replace(regex, `<span style="background-color: ${category.color}; padding: 2px 4px; border-radius: 4px;">$1</span>`);
+                    const saturatedColor = toSaturatedColor(category.color, categorySaturationPercent);
+                    docText = docText.replace(
+                        regex,
+                        `<span class="keyword-highlight" data-base-color="${category.color}" style="background-color: ${saturatedColor}; padding: 2px 4px; border-radius: 4px;">$1</span>`
+                    );
                 }
                 return docText;
             }
@@ -385,6 +1880,10 @@
                 const templateNetwork = document.querySelector(templateNetworkId);
                 const templateSVG = templateNetwork.content.querySelector("svg");
                 const cloneSVG = document.importNode(templateSVG, true);
+                cloneSVG.classList.add("network-svg");
+                const viewportGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                viewportGroup.classList.add("network-viewport");
+                cloneSVG.appendChild(viewportGroup);
 
                 // エッジを追加するメソッド
                 const addEdge = (attributeEdge) =>
@@ -400,7 +1899,7 @@
                     edge.setAttribute("stroke-width", "2");
 
                     // ボックスの子要素に <line> を追加
-                    cloneSVG.appendChild(edge);
+                    viewportGroup.appendChild(edge);
                 };
 
                 // ボックスにエッジを追加
@@ -418,6 +1917,7 @@
                 // エッジが描画された svg を参照
                 const boxNetwork = document.querySelector(boxNetworkId);
                 const boxSVG     = boxNetwork.querySelector("svg");
+                const viewportGroup = boxSVG.querySelector("g.network-viewport");
 
                 // ノードを追加するメソッド
                 const addNode = (attributeNode) =>
@@ -447,7 +1947,8 @@
                     circle.setAttribute("cx", attributeNode.cx);
                     circle.setAttribute("cy", attributeNode.cy);
                     circle.setAttribute("r", attributeNode.r);
-                    circle.setAttribute("fill", docColor);
+                    circle.setAttribute("data-base-color", docColor);
+                    circle.setAttribute("fill", toSaturatedColor(docColor, categorySaturationPercent));
                     circle.setAttribute("onclick", `generateSimilarDocumentDetail("${docName}")`);
                     circle.classList.add("circle");
 
@@ -462,12 +1963,12 @@
                     node.appendChild(circle);
 
                     // ボックスの子要素に <a> を追加
-                    boxSVG.appendChild(circle);
+                    viewportGroup.appendChild(circle);
                 };
 
                 // 文書詳細画面にクエリ文書を追加
                 generateQueryDocumentDetail(
-                    `${attributeNodes[0].keyword} ${attributeNodes[0].id} ${attributeNodes[0].fileName}`,
+                    attributeNodes[0].fileName,
                     highlightWord(attributeNodes[0].title, categories)
                 );
 
@@ -475,6 +1976,110 @@
                 attributeNodes.forEach(attributeNode => {
                     addNode(attributeNode);
                 });
+
+                setupPanZoom(boxNetwork, boxSVG, viewportGroup);
+            }
+
+            function setupPanZoom(boxNetwork, boxSVG, viewportGroup)
+            {
+                if (typeof detachPanZoomHandlers === "function") {
+                    detachPanZoomHandlers();
+                    detachPanZoomHandlers = null;
+                }
+                resetPanZoomView = null;
+                if (!boxNetwork || !boxSVG || !viewportGroup) return;
+
+                const state = {
+                    scale: 1,
+                    tx: 0,
+                    ty: 0,
+                    dragging: false,
+                    lastX: 0,
+                    lastY: 0
+                };
+
+                const applyTransform = () => {
+                    viewportGroup.setAttribute("transform", `translate(${state.tx}, ${state.ty}) scale(${state.scale})`);
+                    viewCoordsState = { tx: state.tx, ty: state.ty, scale: state.scale };
+                    updateViewCoordsText();
+                };
+                const fitGraphInView = () => {
+                    const bounds = getGraphBounds(viewportGroup);
+                    const rect = boxSVG.getBoundingClientRect();
+                    if (!bounds || rect.width <= 0 || rect.height <= 0) {
+                        state.scale = 1;
+                        state.tx = 0;
+                        state.ty = 0;
+                        applyTransform();
+                        return;
+                    }
+                    const pad = 24;
+                    const scaleX = (rect.width - pad * 2) / bounds.width;
+                    const scaleY = (rect.height - pad * 2) / bounds.height;
+                    const nextScale = Math.max(0.05, Math.min(8, Math.min(scaleX, scaleY)));
+                    state.scale = nextScale;
+                    state.tx = pad + (rect.width - pad * 2 - bounds.width * nextScale) / 2 - bounds.minX * nextScale;
+                    state.ty = pad + (rect.height - pad * 2 - bounds.height * nextScale) / 2 - bounds.minY * nextScale;
+                    applyTransform();
+                };
+                fitGraphInView();
+                resetPanZoomView = fitGraphInView;
+
+                const onWheel = (event) => {
+                    event.preventDefault();
+                    const rect = boxSVG.getBoundingClientRect();
+                    const mouseX = event.clientX - rect.left;
+                    const mouseY = event.clientY - rect.top;
+                    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+                    const nextScale = Math.min(8, Math.max(0.2, state.scale * zoomFactor));
+                    if (nextScale === state.scale) return;
+
+                    const worldX = (mouseX - state.tx) / state.scale;
+                    const worldY = (mouseY - state.ty) / state.scale;
+                    state.scale = nextScale;
+                    state.tx = mouseX - worldX * state.scale;
+                    state.ty = mouseY - worldY * state.scale;
+                    applyTransform();
+                };
+
+                const onMouseDown = (event) => {
+                    if (event.button !== 0) return;
+                    if (event.target.closest("circle")) return;
+                    state.dragging = true;
+                    state.lastX = event.clientX;
+                    state.lastY = event.clientY;
+                    boxSVG.classList.add("is-panning");
+                };
+
+                const onMouseMove = (event) => {
+                    if (!state.dragging) return;
+                    state.tx += event.clientX - state.lastX;
+                    state.ty += event.clientY - state.lastY;
+                    state.lastX = event.clientX;
+                    state.lastY = event.clientY;
+                    applyTransform();
+                };
+
+                const stopDrag = () => {
+                    if (!state.dragging) return;
+                    state.dragging = false;
+                    boxSVG.classList.remove("is-panning");
+                };
+
+                boxSVG.addEventListener("wheel", onWheel, { passive: false });
+                boxSVG.addEventListener("mousedown", onMouseDown);
+                window.addEventListener("mousemove", onMouseMove);
+                window.addEventListener("mouseup", stopDrag);
+                boxNetwork.addEventListener("mouseleave", stopDrag);
+
+                detachPanZoomHandlers = () => {
+                    boxSVG.removeEventListener("wheel", onWheel);
+                    boxSVG.removeEventListener("mousedown", onMouseDown);
+                    window.removeEventListener("mousemove", onMouseMove);
+                    window.removeEventListener("mouseup", stopDrag);
+                    boxNetwork.removeEventListener("mouseleave", stopDrag);
+                    boxSVG.classList.remove("is-panning");
+                };
             }
 
             /* カテゴリーの生成関数 */
@@ -482,6 +2087,8 @@
             {
                 const boxCategory      = document.querySelector(boxCategoryId);
                 const templateCategory = document.querySelector(templateCategoryId);
+                if (!boxCategory || !templateCategory) return;
+                boxCategory.innerHTML = "";
 
                 // カテゴリーを追加するメソッド
                 const addCategory = (category) =>
@@ -491,7 +2098,8 @@
 
                     // 「カテゴリー名,総数,カテゴリー色」を設定
                     cloneCategory.querySelector("div").childNodes[2].textContent = `${category.keyword}:${category.total}`;
-                    cloneCategory.querySelector("i").style.color = category.color;
+                    cloneCategory.querySelector("i").setAttribute("data-base-color", category.color);
+                    cloneCategory.querySelector("i").style.color = toSaturatedColor(category.color, categorySaturationPercent);
                     
                     // 設定後のカテゴリー DOM をボックスに挿入
                     boxCategory.appendChild(cloneCategory);
@@ -525,6 +2133,8 @@
                 const cloneDivider2   = document.importNode(templateDivider.content, true);
                 const boxDivider1     = document.querySelector(boxDivider1Id);
                 const boxDivider2     = document.querySelector(boxDivider2Id);
+                boxDivider1.innerHTML = "";
+                boxDivider2.innerHTML = "";
                 boxDivider1.appendChild(cloneDivider1);
                 boxDivider2.appendChild(cloneDivider2);
                 boxDivider1.querySelector("i").classList.add("connectdevelop", "icon");
@@ -547,7 +2157,90 @@
                     const boxForm      = document.querySelector(boxFormId);
                     boxForm.innerHTML  = '';
                     boxForm.appendChild(cloneForm);
+                    bindUploadFileNameLabel();
+                    bindUploadDropZone();
                 }
+            }
+
+            function bindDisplayModeSelector()
+            {
+                const radios = document.querySelectorAll('input[name="display-mode"]');
+                radios.forEach((radio) => {
+                    radio.addEventListener("change", (event) => {
+                        applyGraphDisplayMode(event.target.value);
+                    });
+                });
+            }
+
+            function bindUploadFileNameLabel()
+            {
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const nameLabel = document.querySelector("#selected-file-name");
+                if (!fileInput || !nameLabel) return;
+
+                const renderFileName = () => {
+                    const selected = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
+                    selectedUploadFile = selected || null;
+                    nameLabel.textContent = selected ? selected.name : "未選択";
+                    updateExperimentReadyState();
+                    renderDebugPanel();
+                };
+                fileInput.addEventListener("change", renderFileName);
+                renderFileName();
+            }
+
+            function bindUploadDropZone()
+            {
+                const dropZone = document.querySelector("#template-upload-drop-zone");
+                const fileInput = document.querySelector("#template-invisible-upload");
+                const nameLabel = document.querySelector("#selected-file-name");
+                if (!dropZone || !fileInput || !nameLabel) return;
+
+                const setSelectedFile = (file) => {
+                    selectedUploadFile = file;
+                    nameLabel.textContent = file.name;
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        fileInput.files = dt.files;
+                    } catch (_) {
+                        // fileInput.files へ代入できない環境では selectedUploadFile を使用
+                    }
+                    updateExperimentReadyState();
+                    renderDebugPanel();
+                };
+
+                const preventDefaults = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                };
+
+                dropZone.addEventListener("dragenter", (event) => {
+                    preventDefaults(event);
+                    dropZone.classList.add("is-dragover");
+                });
+                dropZone.addEventListener("dragover", (event) => {
+                    preventDefaults(event);
+                    dropZone.classList.add("is-dragover");
+                });
+                dropZone.addEventListener("dragleave", (event) => {
+                    preventDefaults(event);
+                    if (!dropZone.contains(event.relatedTarget)) {
+                        dropZone.classList.remove("is-dragover");
+                    }
+                });
+                dropZone.addEventListener("drop", (event) => {
+                    preventDefaults(event);
+                    dropZone.classList.remove("is-dragover");
+                    const files = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files : null;
+                    if (!files || files.length === 0) return;
+                    const file = files[0];
+                    if (!/\.csv$/i.test(file.name)) {
+                        alert("CSVファイルをドロップしてください。");
+                        return;
+                    }
+                    setSelectedFile(file);
+                });
             }
 
             /* クエリ文書ロード画面の生成関数 */
@@ -592,6 +2285,7 @@
             {
                 const boxCategory = document.querySelector(boxCategoryId);
                 boxCategory.innerHTML = '';
+                categories = [];
             }
 
             /* ネットワークの削除関数 */
@@ -633,6 +2327,7 @@
                 clearNetwork();
                 clearDocumentDetail();
                 clearForm();
+                setGraphWorkspaceLocked(true);
                 generateLoader();
                 generateLoadedDocument(fileName, fileContent) // ロード中にクエリ文書を表示しておく
             }
@@ -661,6 +2356,8 @@
             {
                 // リダイレクトを無効化
                 event.preventDefault();
+                const generationStart = performance.now();
+                setGenerationStatus("グラフ生成中...");
 
                 // オプション設定を取得
                 networkOption = {
@@ -668,11 +2365,16 @@
                     graph  : document.querySelector('input[name="graph"]:checked').value,
                     search : document.querySelector('input[name="num-k"]:checked').value
                 }
+                const selectedDisplayMode = document.querySelector('input[name="display-mode"]:checked')?.value || "side";
+                applyGraphDisplayMode(selectedDisplayMode);
 
                 // 文書を取得
-                const templateInvisibleUpload = document.querySelector('#template-invisible-upload');
-                const fileContent = templateInvisibleUpload.files[0];
-                if (!fileContent) { alert('文書ファイルを選択してください。'); return; }
+                const fileContent = getSelectedUploadFile();
+                if (!fileContent) {
+                    alert('文書ファイルを選択してください。');
+                    setGenerationStatus("", false);
+                    return;
+                }
 
                 try
                 {
@@ -696,11 +2398,49 @@
                     uploadDocument.normalText  = uploadedText;
                     uploadDocument.wakachiText = await getWakachiSentence(uploadedText);
 
+                    const requestPayload = {
+                        name: uploadDocument.name,
+                        normalText: uploadDocument.normalText,
+                        wakachiText: uploadDocument.wakachiText,
+                        networkType: networkOption.visual,
+                        graphType: networkOption.graph,
+                        searchNum: networkOption.search
+                    };
+                    const validationResult = validateUploadDocument(uploadDocument, requestPayload);
+                    if (!validationResult.valid) {
+                        alert(`入力データが上限を超えています。\n${validationResult.errors.join("\n")}`);
+                        return;
+                    }
+
                     // ロード時の処理
                     processLoading(fileContent.name, uploadedText);
 
                     // バックエンド側からのレスポンスを取得して DOM を更新
-                    await generateNetWork(uploadDocument);
+                    const result = await generateNetWork(uploadDocument);
+                    const generationMs = performance.now() - generationStart;
+                    const generationSec = (generationMs / 1000).toFixed(2);
+                    if (result && result.success) {
+                        const visualLabel = visualLabelMap[networkOption.visual] || networkOption.visual;
+                        const graphLabel = graphLabelMap[networkOption.graph] || networkOption.graph;
+                        latestGeneratedGraphInfo = {
+                            fileName: fileContent.name,
+                            visual: networkOption.visual,
+                            graph: networkOption.graph,
+                            search: `${networkOption.search}件`
+                        };
+                        const statusText = `「${fileContent.name}」・「${visualLabel}」・「${graphLabel}」・「${networkOption.search}件」のグラフを「${generationSec}秒」で生成済み`;
+                        setGenerationStatus(statusText, false);
+                        updateLogGeneration(result.logRecord, {
+                            fileName: fileContent.name,
+                            visual: visualLabel,
+                            graph: graphLabel,
+                            search: `${networkOption.search}件`,
+                            elapsedMs: Math.round(generationMs),
+                            elapsedSeconds: Number(generationSec)
+                        });
+                    } else {
+                        setGenerationStatus("グラフ生成に失敗しました。ログを確認してください。", true);
+                    }
 
                     // 全ての DOM がレンダリングされたらロード画面を削除
                     clearLoader();
@@ -708,6 +2448,7 @@
                 catch (error)
                 {
                     console.error('Error reading file:', error);
+                    setGenerationStatus("グラフ生成に失敗しました。", true);
                     return;
                 }
             }
@@ -717,6 +2458,12 @@
             {
                 generateDivider();
                 generateDocumentForm();
+                applyGraphDisplayMode("side");
+                generateColorControl();
+                setGraphWorkspaceLocked(true);
+                setupLayoutSplitter();
+                setupGraphHeightSplitter();
+                renderDebugPanel();
             });
         </script>
 <!-- ==== End Script ==== -->

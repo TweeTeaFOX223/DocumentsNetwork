@@ -1,1 +1,1 @@
-void kk(const char **argv, const char **commonNodeColor);
+int kk(const char **argv);

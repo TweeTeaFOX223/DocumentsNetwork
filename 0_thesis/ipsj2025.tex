@@ -1,0 +1,161 @@
+\documentclass[a4j,fleqn,10pt]{jarticle}
+\usepackage{ipsj}
+\usepackage{txfonts}
+\usepackage[symbol*,perpage]{footmisc}
+\usepackage[dvipdfm]{graphicx}
+%\usepackage{slashbox}
+%\usepackage{amsmath}
+\newcommand{\argmax}{\mathop{\rm arg~max}\limits}
+\newcommand{\argmin}{\mathop{\rm arg~min}\limits}
+
+%-------------------------------------------jtitle and jauthors information
+\begin{document}
+
+\jtitle{類似貢献度に基づく文書検索結果の可視化評価法}
+
+\jcontact{
+\dag 神奈川大学大学院 理学研究科
+}
+
+\jauthor{尾崎　了祐\dag \and 斉藤　和巳\dag}
+%登録番号　5401
+\maketitle
+%-------------------------------------------etitle and eauthors information
+\footnotetext[0]{\hspace*{-5.2mm}Evaluation Method for Visualization Results of Similar Contribution Vectors.} %英タイトル
+\footnotetext[0]{\hspace*{-6.5mm}\dag Ryosuke OZAKI \quad \dag Kazumi SAITO \quad} %著者情報
+\footnotetext[0]{\hspace*{-6.5mm}\dag Kanagawa University} %自分の英語版所属
+
+%-------------------------------------------document
+
+\section{はじめに}\label{sec:INTRO}
+著者らは, 与えられた文書クエリの類似検索結果文書集合を, グラフを用いて可視化する手法を提案した~\cite{ozaki}. 
+一方で, グラフ可視化には他の手法~\cite{saito}を用いることも可能だが, 
+可視化結果を定量評価する方法はあまり知られていない.
+
+そこで, 本論文では, 各種可視化法の有効性を, エッジ長の変動係数を用いて定量評価する方法を提案する. 
+livedoor ニュースコーパスを用いた評価実験では, ４つの手法でグラフを可視化し,
+定量評価と可視化例に基づく定性評価を比較することで, 定量評価法の妥当性を検証する. 
+
+\section{提案手法}\label{sec:PROP}
+任意のノードをホバーすることで, 文書詳細を閲覧できる機能をもつ可視化グラフを想定する.
+まず, 提案法を述べる前に, 良い可視化グラフといえる基準を定義する.
+本研究では下記項目を設定した.
+\begin{enumerate}
+    \item 隣接ノードが離れすぎずに描画される
+    \item 重なっているノードが存在しない
+\end{enumerate}
+項目１は, 隣接ノード同士が一定の範囲内で描画されるか評価している.
+非常に離れた位置に点在している場合, ホバーしにくいためである.
+項目２は, 複数のノードが重なって描画されないか評価している.
+重なるとホバーが困難なため, 最悪の場合, 文書詳細を閲覧できないノードが出現する.
+従って, 上記項目をどの程度満たすか定量的に評価可能な手法を提案することが目的となる.
+次に, 提案可視化評価法の手順を以下に述べる.
+エッジ長の集合を ${\cal E} = \{1, \cdots, e, \cdots, E \}$ とし,
+${\cal E}$ に対し, 平均 $\mu$, 標準偏差 $\sigma$ を求める.
+次に, 変動係数を
+\begin{equation}
+  {cv} = \frac{\sigma}{\mu} \times 100
+  \label{sc1}
+\end{equation}
+で導出する.
+式(\ref{sc1})は, エッジ長のばらつき度合いを示す数値であり,
+この値が小さい程, 各エッジの長さは全体的に同程度となる.
+故に, 隣接ノードが一定の範囲内に描画される割合が高くなる.
+逆に, 値が大きい程, 各エッジの長さに「ばらつき」が生じる.
+故に, 短すぎる, 長すぎる等の不自然なエッジ長をもつ割合が大きくなり, 
+結果的に隣接ノード同士の距離が不自然なペアが出現する.
+従って, 変動係数が小さくなる程, 項目１を高水準で満たすグラフとなるため,
+式(\ref{sc1})を用いることで, ある程度の定量評価が可能になる.
+
+次に, 項目２に該当するケースも考慮する.
+ここでは, 半径 $r$ の円として可視化する.
+例えば, エッジの生成範囲が一方向に偏っている場合, 
+ノードが重なる割合が高くなり, ホバーが困難なグラフが生成されてしまう.
+従って, ノード集合を ${\cal N} = \{1, \cdots, n, \cdots, N \}$, 
+ノード $n$ の座標を $(X_n, Y_n)$, $\forall n \neq m$ の条件で重なっているノードの個数を $on$とし,
+\begin{equation}
+  {on} = |\left\{ n, m \mid \sqrt{(X_n - X_m)^2 + (Y_n - Y_m)^2} \leq 2r \right\}|
+  \label{sc2}
+\end{equation}
+を求め, 定量評価に用いる.
+この値が小さくなる程, 項目２を高水準で満たすグラフとなる.
+
+最後に, 可視化ネットワーク数を$L$, 可視化手法を$M$とした$L*M$個のデータを用い, 
+X軸には評価項目１を式(\ref{sc1})で求めた値を,
+Y軸には評価項目２を式(\ref{sc2})で求めた値を設定した散布図を生成する. 
+
+\section{実験による評価}\label{sec:EXP}
+提案法での評価項目１,２を用いて, 可視化グラフを定量評価可能か実験する.
+可視化手法$M$には, スペクトラル法(se), 多次元尺度法(mds),
+クロスエントロピー法(ce), ばねモデル法(kk)を採用した.
+また, 定量評価する際の実験データとして, livedoor ニュースコーパスから文書検索を行い, 
+ノード数を $100$ に設定した全7367件の可視化グラフを生成した. 
+本稿では, 標本集団として抽出した$L=8$, $M=4$の範囲内で図~\ref{fig1}の散布図を用いて説明する.
+X軸には評価項目１を式(\ref{sc1})で求めた値を,
+Y軸には評価項目２を式(\ref{sc2})で求めた値を設定した.
+左下に近い位置にプロットされるサークルである程, 項目１,２を高水準で満たすグラフとなる.
+また, 各サークルの数値は $id$ を示しており, 同番のサークルは同様の文書データを用いて可視化グラフを生成している.
+
+図~\ref{fig1}より, ばねモデル法はどれも左下にプロットされており, 可視化グラフとして高水準である.
+一方で, スペクトラル法は全体的に右上にプロットされているため低水準と判断できる.
+多次元尺度法, クロスエントロピー法は全体的に図の中央に位置しており, 
+それぞれを比較してみると, 項目１は多次元尺度法, 項目２はクロスエントロピー法に分があることが見て取れる.
+
+次に, 実際に生成された可視化グラフを確認し, 先ほどの定量評価と結果が一致するか確認する. 
+今回は, 各種可視化グラフの評価値が全体的に同程度となった,
+すなわち, 目視での評価が困難である $id6$ を対象として確認した.
+
+$id6$のグラフ可視化結果を図~\ref{fig2}に示す. 
+スペクトラル法(a), 多次元尺度法(b), クロスエントロピー法(c)では,
+離れている, 部分的に重なっている隣接ノードが存在するが,
+ばねモデル法(d)では全く存在しないことが見て取れる. 
+これら結果より, 定性評価でも, ばねモデル法が高水準であり, 定量評価と結果が一致した.
+
+\section{おわりに}\label{sec:CONC}
+本稿では, エッジ長の変動係数を用いたグラフ可視化結果評価法を提案した.
+livedoor ニュースコーパスを用いた評価実験では, エッジ長の変動係数を定量評価することで,
+定性評価と結果が一致することを確認し, 提案法の妥当性を検証した. 
+今後の研究でも，提案法の妥当性を様々な可視化手法で検証する．
+
+\fontsize{9.5pt}{0pt}\selectfont
+\begin{thebibliography}{99}
+\bibitem{ozaki}
+尾崎 了祐, 斉藤和己.
+類似貢献度に基づく文書検索結果の可視化分析法.
+情報処理学会第８６回全国大会, 2024. 
+\bibitem{saito}
+斉藤和巳.
+ネットワークの可視化技術―大規模情報からの意味情報の抽出―.
+数理科学, 536, 78-83, 2008.
+\end{thebibliography}
+
+\begin{figure}[tb]
+  \begin{center}
+  \includegraphics[width=\hsize]{figs/ipsj2025/fig1.png}
+  \end{center}
+  \caption{可視化グラフの評価値を示す散布図}
+  \label{fig1}
+\end{figure}
+
+\begin{figure}[t]
+   \begin{center}
+    \includegraphics[width=\hsize]{figs/ipsj2025/fig2a.png} 
+    \mbox{(a)スペクトラル法}
+   \end{center}
+   \begin{center}
+    \includegraphics[width=\hsize]{figs/ipsj2025/fig2b.png}
+    \mbox{(b) 多次元尺度法}
+   \end{center}
+   \begin{center}
+    \includegraphics[width=\hsize]{figs/ipsj2025/fig2c.png}
+    \mbox{(c) クロスエントロピー法}
+   \end{center}
+   \begin{center}
+    \includegraphics[width=\hsize]{figs/ipsj2025/fig2d.png}
+    \mbox{(d)ばねモデル法}
+   \end{center}
+ \caption{文書$id6$の各種グラフ可視化結果}
+ \label{fig2}
+\end{figure}
+
+\end{document}
