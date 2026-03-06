@@ -8,6 +8,7 @@
         <title>k-saito-browsing</title>
         <script src="./node_modules/jquery/dist/jquery.min.js"></script>
         <script src="./node_modules/jszip/dist/jszip.min.js"></script>
+        <script src="./node_modules/mermaid/dist/mermaid.min.js"></script>
         <script src="./quality-metrics.js"></script>
         <link rel="stylesheet" type="text/css" href="./node_modules/fomantic-ui-css/semantic.min.css">
 <!-- ==== Begin Style ==== -->
@@ -515,6 +516,101 @@
                 color: #69798a;
                 padding: 12px 0 2px 0;
             }
+            .architecture-guide-wrap {
+                width: 80vw;
+                margin: 18px auto 8px auto;
+                display: flex;
+                justify-content: center;
+            }
+            .architecture-guide-button {
+                min-height: 44px;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                padding: 10px 18px !important;
+            }
+            .architecture-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 6500;
+                background: rgba(14, 20, 28, 0.66);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+            .architecture-modal.is-visible {
+                display: flex;
+            }
+            .architecture-modal-dialog {
+                width: min(1180px, 96vw);
+                max-height: 94vh;
+                overflow: auto;
+                background: #fbfcfe;
+                border: 1px solid #cfd8e1;
+                border-radius: 12px;
+                box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+                padding: 16px 18px 18px 18px;
+            }
+            .architecture-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            .architecture-modal-title {
+                font-size: 21px;
+                font-weight: 700;
+                color: #213446;
+            }
+            .architecture-modal-note {
+                font-size: 13px;
+                line-height: 1.65;
+                color: #546576;
+                margin-bottom: 12px;
+            }
+            .architecture-mermaid-block {
+                border: 1px solid #d4dde6;
+                border-radius: 10px;
+                background: #ffffff;
+                padding: 10px;
+                margin-bottom: 14px;
+                overflow: auto;
+            }
+            .architecture-mermaid {
+                min-width: 980px;
+            }
+            .architecture-detail-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+            .architecture-detail-card {
+                border: 1px solid #d4dde6;
+                border-radius: 10px;
+                background: #ffffff;
+                padding: 12px 14px;
+            }
+            .architecture-detail-card h4 {
+                margin: 0 0 8px 0;
+                font-size: 15px;
+                color: #29435e;
+            }
+            .architecture-detail-card ul {
+                margin: 0;
+                padding-left: 20px;
+                font-size: 13px;
+                line-height: 1.68;
+                color: #435564;
+            }
+            .architecture-detail-card li + li {
+                margin-top: 4px;
+            }
+            @media (max-width: 920px) {
+                .architecture-detail-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
             .network-svg {
                 cursor: grab;
             }
@@ -663,8 +759,49 @@
             <!-- loading icon -->
             <section id="box-loader"></section>
 
+            <section class="architecture-guide-wrap">
+                <button id="open-architecture-guide" class="ui blue button architecture-guide-button" type="button">アプリのシーケンス図</button>
+            </section>
+
         </main>
 <!-- ==== End Box ==== -->
+
+        <section id="architecture-modal" class="architecture-modal" aria-hidden="true">
+            <div class="architecture-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="architecture-modal-title">
+                <div class="architecture-modal-header">
+                    <div id="architecture-modal-title" class="architecture-modal-title">DocumentsNetwork のシーケンス図</div>
+                    <button id="close-architecture-guide" class="ui button" type="button">閉じる</button>
+                </div>
+                <div class="architecture-modal-note">
+                    このアプリは、クエリ文書を MeCab で分かち書きし、Apache CGI 側で類似文書検索・構成グラフ生成・可視化座標計算を行い、最後に client がネットワーク図と評価結果を表示する構成です。
+                </div>
+                <div class="architecture-mermaid-block">
+                    <div class="quality-section-title">シーケンス図</div>
+                    <div id="architecture-sequence-mermaid" class="architecture-mermaid"></div>
+                </div>
+                <div class="architecture-detail-grid">
+                    <section class="architecture-detail-card">
+                        <h4>各サーバーの役割</h4>
+                        <ul>
+                            <li><strong>client</strong>: クエリ文書アップロード、Visual / Graph / Search の選択、グラフ描画、文書詳細表示、Request/Response Log、定量評価表示を担当します。</li>
+                            <li><strong>server-mecab</strong>: `normalText` を前処理し、MeCab により `wakachiText` を生成します。Apache CGI に渡す前の自然言語処理の入口です。</li>
+                            <li><strong>Apache CGI(main.cgi)</strong>: クエリとデータセットを比較し、類似文書集合の決定、類似貢献度計算、構成グラフ生成、可視化座標計算、JSON レスポンス出力を行います。</li>
+                            <li><strong>0_data / C内部処理</strong>: `uid.txt`、`doc.txt`、`wakachi.txt` をもとに、検索対象文書と中間計算データを扱います。</li>
+                        </ul>
+                    </section>
+                    <section class="architecture-detail-card">
+                        <h4>研究内容の要点</h4>
+                        <ul>
+                            <li>文書同士が「どの説明語の観点で類似しているか」を類似貢献度ベクトルとして表し、その構造をネットワーク図で可視化します。</li>
+                            <li><strong>Graph 手法</strong>では KNN / MST / HML により、どの文書対をエッジで結ぶかを決めます。</li>
+                            <li><strong>Visual 手法</strong>では SE / MDS / CE / KK により、ノードを 2 次元平面へ配置します。</li>
+                            <li>説明語ごとのカテゴリ色、ノード位置、エッジ構造を同時に見ることで、検索結果全体の類似構造と局所的な文書群を把握しやすくしています。</li>
+                            <li>可視化品質は `cv`（エッジ長の変動係数）と `on`（ノード重なり指標）で定量評価し、複数手法の比較も client 上で確認できます。</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </section>
 
 <!-- ==== Begin Template ==== -->
         <!-- mapping box-loader -->
@@ -912,6 +1049,7 @@
             let experimentCancelRequested = false;
             let selectedUploadFile = null;
             let last503NoticeAt = 0;
+            let architectureMermaidRendered = false;
 
             function getNowIsoString()
             {
@@ -2424,6 +2562,76 @@
                 });
             }
 
+            function renderArchitectureMermaid()
+            {
+                if (architectureMermaidRendered) return;
+                const sequenceContainer = document.querySelector("#architecture-sequence-mermaid");
+                if (!sequenceContainer || typeof mermaid === "undefined") return;
+
+                const sequenceDefinition = `
+sequenceDiagram
+    autonumber
+    actor U as 利用者
+    participant C as client
+    participant M as server-mecab
+    participant A as Apache CGI(main.cgi)
+    participant D as 0_data / C内部処理
+
+    U->>C: クエリ文書をアップロードし、Visual / Graph / Search を選択
+    C->>M: normalText を送信
+    M-->>C: wakachiText を返却
+    C->>A: name / normalText / wakachiText / networkType / graphType / searchNum を送信
+    A->>D: 検索対象データ読込・類似貢献度計算・構成グラフ生成
+    D-->>A: 類似文書集合 / グラフ構造 / 座標計算結果
+    A-->>C: JSON response（nodes / edges / similarity）
+    C->>C: SVGネットワーク図描画・カテゴリ表示・文書詳細表示
+    C->>C: cv / on を計算し、定量評価パネル・比較散布図を更新
+    C-->>U: 可視化結果を表示
+                `.trim();
+
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: "default",
+                    securityLevel: "loose",
+                    flowchart: {
+                        curve: "basis",
+                        htmlLabels: true
+                    }
+                });
+                sequenceContainer.textContent = sequenceDefinition;
+                mermaid.run({ nodes: [sequenceContainer] });
+                architectureMermaidRendered = true;
+            }
+
+            function bindArchitectureGuideModal()
+            {
+                const openButton = document.querySelector("#open-architecture-guide");
+                const closeButton = document.querySelector("#close-architecture-guide");
+                const modal = document.querySelector("#architecture-modal");
+                if (!openButton || !closeButton || !modal) return;
+
+                const closeModal = () => {
+                    modal.classList.remove("is-visible");
+                    modal.setAttribute("aria-hidden", "true");
+                };
+                const openModal = () => {
+                    modal.classList.add("is-visible");
+                    modal.setAttribute("aria-hidden", "false");
+                    renderArchitectureMermaid();
+                };
+
+                openButton.addEventListener("click", openModal);
+                closeButton.addEventListener("click", closeModal);
+                modal.addEventListener("click", (event) => {
+                    if (event.target === modal) closeModal();
+                });
+                document.addEventListener("keydown", (event) => {
+                    if (event.key === "Escape" && modal.classList.contains("is-visible")) {
+                        closeModal();
+                    }
+                });
+            }
+
             /* クエリ文書ロード画面の生成関数 */
             function generateLoadedDocument(uploadedName, uploadedText)
             {
@@ -2644,6 +2852,7 @@
                 setGraphWorkspaceLocked(true);
                 setupLayoutSplitter();
                 setupGraphHeightSplitter();
+                bindArchitectureGuideModal();
                 renderDebugPanel();
             });
         </script>
