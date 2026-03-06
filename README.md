@@ -11,7 +11,7 @@
 </p>  
 <p align="center">
   <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_2.png">
-</p>  
+</p>
 <p align="center">
   <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_3.png">
 </p>
