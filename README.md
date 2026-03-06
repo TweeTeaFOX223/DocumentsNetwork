@@ -405,6 +405,18 @@ client から Apache サーバー（`main.cgi`）へ送るリクエストと、�
 `edges` 要素:
 - `x1`, `y1`（number）： エッジの始点ノードの2D座標（ピクセル値）
 - `x2`, `y2`（number）：エッジの終点ノードの2D座標（ピクセル値）
+- `similarity`（number）：そのエッジで結ばれている2文書間のコサイン類似度。ノートブック等でエッジ長との相関確認や定量評価に利用可能
+- `sourceId`（number）：始点ノードに対応する文書ID
+- `sourceFileName`（string）：始点ノードに対応する文書ファイル名
+- `targetId`（number）：終点ノードに対応する文書ID
+- `targetFileName`（string）：終点ノードに対応する文書ファイル名
+
+補足:
+- `similarity` は「各ノード単体のスコア」ではなく、「そのエッジで結ばれている2文書の組」に対する値です。
+- 例えば `edges[0]` がノードAとノードBを結ぶ線なら、`edges[0].similarity` は「文書Aと文書Bの類似度」です。
+- 類似度は、`lblk.txt` に記録された各文書の類似貢献度ベクトルを正規化したうえで、その内積（コサイン類似度）として算出しています。
+- そのため、値は「そのエッジがどれだけ内容的に近い文書同士を結んでいるか」を表します。
+- `nodes` 配列の `title` は文書本文、`edges` は接続関係とその接続に対応する文書間類似度、という関係です。
 
 `nodes` 要素:
 - `category`（number）：説明語のカテゴリー番号（1以上）。同じ番号のノードは同じ説明語グループに属し、同色で描画される
@@ -427,7 +439,17 @@ curl -X POST "http://localhost/cgi-bin/main.cgi" \
 ```json
 {
   "edges": [
-    { "x1": 231.51, "y1": 114.61, "x2": 390.91, "y2": 514.59 }
+    {
+      "x1": 231.51,
+      "y1": 114.61,
+      "x2": 390.91,
+      "y2": 514.59,
+      "similarity": 0.842531,
+      "sourceId": 1,
+      "sourceFileName": "sample.txt",
+      "targetId": 12,
+      "targetFileName": "sample-2.txt"
+    }
   ],
   "nodes": [
     {
