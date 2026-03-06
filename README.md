@@ -7,6 +7,9 @@
   <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1.png">
 </p>
 <p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_2.png">
+</p>
+<p align="center">
   <img width="852" alt="DocumentsNetwork Screenshot" src="https://github.com/user-attachments/assets/90f927b4-236b-4c8e-836f-0d89f81fcbb8">
 </p>
 
@@ -78,6 +81,9 @@ livedoorニュースコーパス（約7,300件）を使った実験で、この�
 livedoorニュースコーパス（約7,300件）を使った実験で、4種類のグラフ描画アルゴリズム（スペクトラル法・多次元尺度法・クロスエントロピー法・ばねモデル法）を比較しました。
 ばねモデル法が2つの基準をともに高水準で満たし、最も見やすいグラフを生成することが確認されました。この定量評価の結果は、人間が目視で確認した定性評価とも一致しており、提案した評価手法の妥当性が検証されています。
 このツールでもデフォルトの可視化アルゴリズムにばねモデル法を採用しています。
+
+補足:
+- client 画面では、この評価手法に基づく結果を `Request/Response Log` の上部に表示できます。現在表示中のグラフの評価値と、蓄積済みグラフの比較散布図については、後述の「[Request/Response Log 機能（client）](#requestresponse-log-機能client)」を参照してください。
 
 📚 **解説記事**：[類似文書を検索してネットワーク図を生成する](https://or-expert.com/?p=3841)  
 
@@ -494,6 +500,19 @@ client 画面下部の `Request/Response Log` では、送受信データと生�
   - `response`
   - `generation`（`fileName`, `visual`, `graph`, `search`, `elapsedMs`, `elapsedSeconds`）
   - `error`
+
+また、`Request/Response Log` の上部には、論文の評価基準に基づく **定量評価表示パネル** があります。
+
+- `生成中のグラフの定量評価`
+  - 現在表示している 1 件のグラフについて評価値を表示します。
+  - `cv`：エッジ長の変動係数です。値が小さいほど、辺の長さのばらつきが小さい状態です。
+  - `on`：重なりノードペア数です。値が小さいほど、ノード同士の重なりが少ない状態です。
+  - 補助指標として、平均エッジ長と対象ノード数 / エッジ数も表示します。
+
+- `蓄積されたグラフの比較散布図`
+  - これまでに生成した複数のグラフを、`x軸 = cv`、`y軸 = on` で比較表示します。
+  - `Visual` 手法ごとに点を色分けし、凡例も表示します。
+  - 一般には左下に近いほど、エッジ長のばらつきとノード重なりの両方が小さい配置です。
 
 ---
 
