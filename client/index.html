@@ -2000,17 +2000,54 @@
             }
 
             /* 文書内容に出現する説明語を配色する関数 */
+            function escapeHtmlText(text)
+            {
+                return String(text || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+            }
+
+            function escapeRegExp(text)
+            {
+                return String(text || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            }
+
             function highlightWord(docText, categories) {
-                categories.sort((a, b) => {return Number(b.keyword.length) - Number(a.keyword.length)});
-                for(let category of categories) {
-                    const regex = new RegExp(`(${category.keyword})`, "gi"); // 大文字小文字を区別しない
-                    const saturatedColor = toSaturatedColor(category.color, categorySaturationPercent);
-                    docText = docText.replace(
-                        regex,
-                        `<span class="keyword-highlight" data-base-color="${category.color}" style="background-color: ${saturatedColor}; padding: 2px 4px; border-radius: 4px;">$1</span>`
-                    );
+                const sortedCategories = [...categories]
+                    .filter((category) => category && category.keyword)
+                    .sort((a, b) => Number(b.keyword.length) - Number(a.keyword.length));
+                if (sortedCategories.length === 0) return escapeHtmlText(docText);
+
+                const keywordToCategory = new Map();
+                sortedCategories.forEach((category) => {
+                    const key = String(category.keyword).toLowerCase();
+                    if (!keywordToCategory.has(key)) keywordToCategory.set(key, category);
+                });
+
+                const combinedRegex = new RegExp(
+                    sortedCategories.map((category) => escapeRegExp(category.keyword)).join("|"),
+                    "gi"
+                );
+
+                let result = "";
+                let lastIndex = 0;
+                let match;
+                while ((match = combinedRegex.exec(docText)) !== null) {
+                    const matchedText = match[0];
+                    const category = keywordToCategory.get(matchedText.toLowerCase());
+                    result += escapeHtmlText(docText.slice(lastIndex, match.index));
+                    if (category) {
+                        const saturatedColor = toSaturatedColor(category.color, categorySaturationPercent);
+                        result += `<span class="keyword-highlight" data-base-color="${category.color}" style="background-color: ${saturatedColor}; padding: 2px 4px; border-radius: 4px;">${escapeHtmlText(matchedText)}</span>`;
+                    } else {
+                        result += escapeHtmlText(matchedText);
+                    }
+                    lastIndex = match.index + matchedText.length;
                 }
-                return docText;
+                result += escapeHtmlText(docText.slice(lastIndex));
+                return result;
             }
 
             /* エッジの生成関数 */
