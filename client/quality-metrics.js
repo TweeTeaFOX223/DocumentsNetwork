@@ -88,6 +88,7 @@ function getQualitySeriesFromLogs(requestLogs)
                 cv: metrics.cv,
                 overlapPairs: metrics.overlapPairs,
                 label,
+                fileName: generation.fileName || log.request?.name || "?",
                 visual,
                 visualKey,
                 isLatest: index === requestLogs.length - 1
@@ -154,7 +155,7 @@ function renderQualityScatter(points)
         const strokeWidth = point.isLatest ? 2 : 1.2;
         return `
             <g>
-                <title>${escapeQualityHtml(`${point.label} | cv=${point.cv.toFixed(2)} | on=${point.overlapPairs}`)}</title>
+                <title>${escapeQualityHtml(`file=${point.fileName} | ${point.label} | cv=${point.cv.toFixed(2)} | on=${point.overlapPairs}`)}</title>
                 <circle cx="${x}" cy="${y}" r="${radius}" fill="${fill}" fill-opacity="0.92" stroke="${stroke}" stroke-width="${strokeWidth}"></circle>
             </g>
         `;
