@@ -7,10 +7,10 @@
   <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1.png">
 </p>
 <p align="center">
-  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_2.png">
-</p>
-<p align="center">
   <img width="852" alt="DocumentsNetwork Screenshot" src="https://github.com/user-attachments/assets/90f927b4-236b-4c8e-836f-0d89f81fcbb8">
+</p>  
+<p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_2.png">
 </p>
 
 ---
