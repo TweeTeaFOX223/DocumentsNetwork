@@ -8,6 +8,8 @@
         <title>k-saito-browsing</title>
         <script src="./node_modules/jquery/dist/jquery.min.js"></script>
         <script src="./node_modules/jszip/dist/jszip.min.js"></script>
+        <script src="./node_modules/mermaid/dist/mermaid.min.js"></script>
+        <script src="./quality-metrics.js"></script>
         <link rel="stylesheet" type="text/css" href="./node_modules/fomantic-ui-css/semantic.min.css">
 <!-- ==== Begin Style ==== -->
         <style>
@@ -425,6 +427,190 @@
                 padding: 10px;
                 font-size: 12px;
             }
+            .quality-panel {
+                margin-bottom: 14px;
+                border: 1px solid #d7dde4;
+                border-radius: 8px;
+                background: linear-gradient(180deg, #fbfcfd 0%, #f2f6f9 100%);
+                padding: 12px;
+            }
+            .quality-panel-header {
+                font-size: 18px;
+                font-weight: 700;
+                color: #243546;
+                margin-bottom: 6px;
+            }
+            .quality-panel-note {
+                font-size: 12px;
+                color: #556576;
+                margin-bottom: 10px;
+                line-height: 1.5;
+            }
+            .quality-section {
+                border: 1px solid #d3dbe4;
+                border-radius: 8px;
+                background: #ffffff;
+                padding: 10px;
+            }
+            .quality-section + .quality-section {
+                margin-top: 12px;
+            }
+            .quality-section-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #304355;
+                margin-bottom: 8px;
+            }
+            .quality-section-note {
+                font-size: 12px;
+                color: #5f6f80;
+                margin-bottom: 10px;
+                line-height: 1.5;
+            }
+            .quality-metric-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(140px, 1fr));
+                gap: 10px;
+            }
+            .quality-metric-card {
+                border: 1px solid #d3dbe4;
+                border-radius: 8px;
+                background: #fbfdff;
+                padding: 10px 12px;
+            }
+            .quality-metric-label {
+                font-size: 12px;
+                color: #617284;
+                margin-bottom: 4px;
+            }
+            .quality-metric-value {
+                font-size: 21px;
+                font-weight: 700;
+                color: #213446;
+                line-height: 1.1;
+            }
+            .quality-metric-sub {
+                margin-top: 4px;
+                font-size: 11px;
+                color: #708294;
+            }
+            .quality-scatter-wrap {
+                border: 1px solid #d3dbe4;
+                border-radius: 8px;
+                background: #ffffff;
+                padding: 10px;
+            }
+            .quality-scatter-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #304355;
+                margin-bottom: 8px;
+            }
+            .quality-scatter-svg {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .quality-empty {
+                font-size: 12px;
+                color: #69798a;
+                padding: 12px 0 2px 0;
+            }
+            .architecture-guide-wrap {
+                width: 80vw;
+                margin: 18px auto 8px auto;
+                display: flex;
+                justify-content: center;
+            }
+            .architecture-guide-button {
+                min-height: 44px;
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                padding: 10px 18px !important;
+            }
+            .architecture-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 6500;
+                background: rgba(14, 20, 28, 0.66);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+            .architecture-modal.is-visible {
+                display: flex;
+            }
+            .architecture-modal-dialog {
+                width: min(1180px, 96vw);
+                max-height: 94vh;
+                overflow: auto;
+                background: #fbfcfe;
+                border: 1px solid #cfd8e1;
+                border-radius: 12px;
+                box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+                padding: 16px 18px 18px 18px;
+            }
+            .architecture-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            .architecture-modal-title {
+                font-size: 21px;
+                font-weight: 700;
+                color: #213446;
+            }
+            .architecture-modal-note {
+                font-size: 13px;
+                line-height: 1.65;
+                color: #546576;
+                margin-bottom: 12px;
+            }
+            .architecture-mermaid-block {
+                border: 1px solid #d4dde6;
+                border-radius: 10px;
+                background: #ffffff;
+                padding: 10px;
+                margin-bottom: 14px;
+                overflow: auto;
+            }
+            .architecture-mermaid {
+                min-width: 980px;
+            }
+            .architecture-detail-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+            .architecture-detail-card {
+                border: 1px solid #d4dde6;
+                border-radius: 10px;
+                background: #ffffff;
+                padding: 12px 14px;
+            }
+            .architecture-detail-card h4 {
+                margin: 0 0 8px 0;
+                font-size: 15px;
+                color: #29435e;
+            }
+            .architecture-detail-card ul {
+                margin: 0;
+                padding-left: 20px;
+                font-size: 13px;
+                line-height: 1.68;
+                color: #435564;
+            }
+            .architecture-detail-card li + li {
+                margin-top: 4px;
+            }
+            @media (max-width: 920px) {
+                .architecture-detail-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
             .network-svg {
                 cursor: grab;
             }
@@ -573,8 +759,49 @@
             <!-- loading icon -->
             <section id="box-loader"></section>
 
+            <section class="architecture-guide-wrap">
+                <button id="open-architecture-guide" class="ui blue button architecture-guide-button" type="button">アプリのシーケンス図</button>
+            </section>
+
         </main>
 <!-- ==== End Box ==== -->
+
+        <section id="architecture-modal" class="architecture-modal" aria-hidden="true">
+            <div class="architecture-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="architecture-modal-title">
+                <div class="architecture-modal-header">
+                    <div id="architecture-modal-title" class="architecture-modal-title">DocumentsNetwork のシーケンス図</div>
+                    <button id="close-architecture-guide" class="ui button" type="button">閉じる</button>
+                </div>
+                <div class="architecture-modal-note">
+                    このアプリは、クエリ文書を MeCab で分かち書きし、Apache CGI 側で類似文書検索・構成グラフ生成・可視化座標計算を行い、最後に client がネットワーク図と評価結果を表示する構成です。
+                </div>
+                <div class="architecture-mermaid-block">
+                    <div class="quality-section-title">シーケンス図</div>
+                    <div id="architecture-sequence-mermaid" class="architecture-mermaid"></div>
+                </div>
+                <div class="architecture-detail-grid">
+                    <section class="architecture-detail-card">
+                        <h4>各サーバーの役割</h4>
+                        <ul>
+                            <li><strong>client</strong>: クエリ文書アップロード、Visual / Graph / Search の選択、グラフ描画、文書詳細表示、Request/Response Log、定量評価表示を担当します。</li>
+                            <li><strong>server-mecab</strong>: `normalText` を前処理し、MeCab により `wakachiText` を生成します。Apache CGI に渡す前の自然言語処理の入口です。</li>
+                            <li><strong>Apache CGI(main.cgi)</strong>: クエリとデータセットを比較し、類似文書集合の決定、類似貢献度計算、構成グラフ生成、可視化座標計算、JSON レスポンス出力を行います。</li>
+                            <li><strong>0_data / C内部処理</strong>: `uid.txt`、`doc.txt`、`wakachi.txt` をもとに、検索対象文書と中間計算データを扱います。</li>
+                        </ul>
+                    </section>
+                    <section class="architecture-detail-card">
+                        <h4>研究内容の要点</h4>
+                        <ul>
+                            <li>文書同士が「どの説明語の観点で類似しているか」を類似貢献度ベクトルとして表し、その構造をネットワーク図で可視化します。</li>
+                            <li><strong>Graph 手法</strong>では KNN / MST / HML により、どの文書対をエッジで結ぶかを決めます。</li>
+                            <li><strong>Visual 手法</strong>では SE / MDS / CE / KK により、ノードを 2 次元平面へ配置します。</li>
+                            <li>説明語ごとのカテゴリ色、ノード位置、エッジ構造を同時に見ることで、検索結果全体の類似構造と局所的な文書群を把握しやすくしています。</li>
+                            <li>可視化品質は `cv`（エッジ長の変動係数）と `on`（ノード重なり指標）で定量評価し、複数手法の比較も client 上で確認できます。</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </section>
 
 <!-- ==== Begin Template ==== -->
         <!-- mapping box-loader -->
@@ -822,6 +1049,7 @@
             let experimentCancelRequested = false;
             let selectedUploadFile = null;
             let last503NoticeAt = 0;
+            let architectureMermaidRendered = false;
 
             function getNowIsoString()
             {
@@ -1576,8 +1804,61 @@
                 const categorySummaryText = categorySummary
                     ? JSON.stringify(categorySummary, null, 2)
                     : "(no category info yet)";
+                const latestMetrics = latest ? getVisualizationQualityMetrics(latest.response) : null;
+                const qualitySeries = getQualitySeriesFromLogs(requestLogs);
+                const qualityPanelHtml = latestMetrics
+                    ? `
+                        <div class="quality-panel">
+                            <div class="quality-panel-header">可視化の品質の評価（定量評価）</div>
+                            <div class="quality-panel-note">
+                                論文に基づき、評価項目1はエッジ長の変動係数（cv）、評価項目2はノード重なりペア数（on）で算出しています。
+                            </div>
+                            <div class="quality-section">
+                                <div class="quality-section-title">生成中のグラフの定量評価</div>
+                                <div class="quality-section-note">現在表示している 1 件のグラフについて、cv と on を算出しています。</div>
+                                <div class="quality-metric-grid">
+                                    <div class="quality-metric-card">
+                                        <div class="quality-metric-label">評価項目1</div>
+                                        <div class="quality-metric-value">${latestMetrics.cv.toFixed(2)}</div>
+                                        <div class="quality-metric-sub">エッジ長の変動係数 cv</div>
+                                        <div class="quality-metric-sub">小さいほど、辺の長さのばらつきが小さい配置です。</div>
+                                    </div>
+                                    <div class="quality-metric-card">
+                                        <div class="quality-metric-label">評価項目2</div>
+                                        <div class="quality-metric-value">${latestMetrics.overlapPairs}</div>
+                                        <div class="quality-metric-sub">重なりペア数 on</div>
+                                        <div class="quality-metric-sub">小さいほど、ノード同士の重なりが少ない配置です。</div>
+                                    </div>
+                                    <div class="quality-metric-card">
+                                        <div class="quality-metric-label">平均エッジ長</div>
+                                        <div class="quality-metric-value">${latestMetrics.meanEdgeLength.toFixed(2)}</div>
+                                        <div class="quality-metric-sub">ピクセル単位</div>
+                                        <div class="quality-metric-sub">描画されている辺の長さの平均値です。</div>
+                                    </div>
+                                    <div class="quality-metric-card">
+                                        <div class="quality-metric-label">対象サイズ</div>
+                                        <div class="quality-metric-value">${latestMetrics.nodeCount} / ${latestMetrics.edgeCount}</div>
+                                        <div class="quality-metric-sub">nodes / edges</div>
+                                        <div class="quality-metric-sub">今回の評価対象に含まれるノード数とエッジ数です。</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="quality-section">
+                                <div class="quality-section-title">蓄積されたグラフの比較散布図</div>
+                                <div class="quality-section-note">過去に生成した複数のグラフを比較します。Visual 手法ごとに点を色分けしています。</div>
+                                ${renderQualityScatter(qualitySeries)}
+                            </div>
+                        </div>
+                    `
+                    : `
+                        <div class="quality-panel">
+                            <div class="quality-panel-header">可視化の品質の評価（定量評価）</div>
+                            <div class="quality-empty">グラフ生成後に、エッジ長の変動係数（cv）と重なりペア数（on）を表示します。</div>
+                        </div>
+                    `;
 
                 boxDebug.innerHTML = `
+                    ${qualityPanelHtml}
                     <div class="ui segment debug-panel">
                         <div class="ui clearing header">
                             Request/Response Log
@@ -1666,6 +1947,7 @@
                     categoryNames: names
                 };
             }
+
 
             /* ネットワーク図の生成関数 */
             async function generateNetWork(uploadDocument, optionOverride = null)
@@ -1856,17 +2138,54 @@
             }
 
             /* 文書内容に出現する説明語を配色する関数 */
+            function escapeHtmlText(text)
+            {
+                return String(text || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+            }
+
+            function escapeRegExp(text)
+            {
+                return String(text || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            }
+
             function highlightWord(docText, categories) {
-                categories.sort((a, b) => {return Number(b.keyword.length) - Number(a.keyword.length)});
-                for(let category of categories) {
-                    const regex = new RegExp(`(${category.keyword})`, "gi"); // 大文字小文字を区別しない
-                    const saturatedColor = toSaturatedColor(category.color, categorySaturationPercent);
-                    docText = docText.replace(
-                        regex,
-                        `<span class="keyword-highlight" data-base-color="${category.color}" style="background-color: ${saturatedColor}; padding: 2px 4px; border-radius: 4px;">$1</span>`
-                    );
+                const sortedCategories = [...categories]
+                    .filter((category) => category && category.keyword)
+                    .sort((a, b) => Number(b.keyword.length) - Number(a.keyword.length));
+                if (sortedCategories.length === 0) return escapeHtmlText(docText);
+
+                const keywordToCategory = new Map();
+                sortedCategories.forEach((category) => {
+                    const key = String(category.keyword).toLowerCase();
+                    if (!keywordToCategory.has(key)) keywordToCategory.set(key, category);
+                });
+
+                const combinedRegex = new RegExp(
+                    sortedCategories.map((category) => escapeRegExp(category.keyword)).join("|"),
+                    "gi"
+                );
+
+                let result = "";
+                let lastIndex = 0;
+                let match;
+                while ((match = combinedRegex.exec(docText)) !== null) {
+                    const matchedText = match[0];
+                    const category = keywordToCategory.get(matchedText.toLowerCase());
+                    result += escapeHtmlText(docText.slice(lastIndex, match.index));
+                    if (category) {
+                        const saturatedColor = toSaturatedColor(category.color, categorySaturationPercent);
+                        result += `<span class="keyword-highlight" data-base-color="${category.color}" style="background-color: ${saturatedColor}; padding: 2px 4px; border-radius: 4px;">${escapeHtmlText(matchedText)}</span>`;
+                    } else {
+                        result += escapeHtmlText(matchedText);
+                    }
+                    lastIndex = match.index + matchedText.length;
                 }
-                return docText;
+                result += escapeHtmlText(docText.slice(lastIndex));
+                return result;
             }
 
             /* エッジの生成関数 */
@@ -2243,6 +2562,76 @@
                 });
             }
 
+            function renderArchitectureMermaid()
+            {
+                if (architectureMermaidRendered) return;
+                const sequenceContainer = document.querySelector("#architecture-sequence-mermaid");
+                if (!sequenceContainer || typeof mermaid === "undefined") return;
+
+                const sequenceDefinition = `
+sequenceDiagram
+    autonumber
+    actor U as 利用者
+    participant C as client
+    participant M as server-mecab
+    participant A as Apache CGI(main.cgi)
+    participant D as 0_data / C内部処理
+
+    U->>C: クエリ文書をアップロードし、Visual / Graph / Search を選択
+    C->>M: normalText を送信
+    M-->>C: wakachiText を返却
+    C->>A: name / normalText / wakachiText / networkType / graphType / searchNum を送信
+    A->>D: 検索対象データ読込・類似貢献度計算・構成グラフ生成
+    D-->>A: 類似文書集合 / グラフ構造 / 座標計算結果
+    A-->>C: JSON response（nodes / edges / similarity）
+    C->>C: SVGネットワーク図描画・カテゴリ表示・文書詳細表示
+    C->>C: cv / on を計算し、定量評価パネル・比較散布図を更新
+    C-->>U: 可視化結果を表示
+                `.trim();
+
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: "default",
+                    securityLevel: "loose",
+                    flowchart: {
+                        curve: "basis",
+                        htmlLabels: true
+                    }
+                });
+                sequenceContainer.textContent = sequenceDefinition;
+                mermaid.run({ nodes: [sequenceContainer] });
+                architectureMermaidRendered = true;
+            }
+
+            function bindArchitectureGuideModal()
+            {
+                const openButton = document.querySelector("#open-architecture-guide");
+                const closeButton = document.querySelector("#close-architecture-guide");
+                const modal = document.querySelector("#architecture-modal");
+                if (!openButton || !closeButton || !modal) return;
+
+                const closeModal = () => {
+                    modal.classList.remove("is-visible");
+                    modal.setAttribute("aria-hidden", "true");
+                };
+                const openModal = () => {
+                    modal.classList.add("is-visible");
+                    modal.setAttribute("aria-hidden", "false");
+                    renderArchitectureMermaid();
+                };
+
+                openButton.addEventListener("click", openModal);
+                closeButton.addEventListener("click", closeModal);
+                modal.addEventListener("click", (event) => {
+                    if (event.target === modal) closeModal();
+                });
+                document.addEventListener("keydown", (event) => {
+                    if (event.key === "Escape" && modal.classList.contains("is-visible")) {
+                        closeModal();
+                    }
+                });
+            }
+
             /* クエリ文書ロード画面の生成関数 */
             function generateLoadedDocument(uploadedName, uploadedText)
             {
@@ -2463,6 +2852,7 @@
                 setGraphWorkspaceLocked(true);
                 setupLayoutSplitter();
                 setupGraphHeightSplitter();
+                bindArchitectureGuideModal();
                 renderDebugPanel();
             });
         </script>

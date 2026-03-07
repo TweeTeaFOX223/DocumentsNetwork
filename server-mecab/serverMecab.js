@@ -9,9 +9,10 @@ function preprocessing(text) {
         ・ 「,」を「、」に置換
         ・ 「\t」を削除
         ・ 「\n」を削除
-        ・ 空白を削除（半角および全角）
+        ・ 不要な連続空白を 1 つに統一
         ・ アルファベットを小文字に統一
         ・ 記号を削除
+        ・ 英数字連結語は前後に空白を入れて境界を維持
     */
   const punctuation = `!"#$%&'()*+\\-./:;<=>?@[\\]^_{|}~「」〔〕“”〈〉『』【】＆＊・（）＄＃＠。、？！｀＋￥％■※`;
   const regexPunctuation = new RegExp(`[${punctuation}]`, "g");
@@ -19,9 +20,11 @@ function preprocessing(text) {
   text = text.replace(/,/g, "、");
   text = text.replace(/\t/g, "");
   text = text.replace(/[\n\r]/g, "");
-  text = text.replace(/\s+/g, "");
   text = text.toLowerCase();
   text = text.replace(regexPunctuation, "");
+  // 英数字列を日本語から分離して、未知語が1文字ずつ崩れにくい状態にする
+  text = text.replace(/([a-z0-9]+)/g, " $1 ");
+  text = text.replace(/[ \u3000]+/g, " ").trim();
   return text;
 }
 

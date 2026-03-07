@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,7 @@
 #define MAX_FILENAME_LEN 4096
 #define MAX_CONTEXT_LEN 262144
 #define MAX_COLOR_LEN 32
+#define MAX_GRAPH_LINE_LEN 65536
 
 // ネットワーク生成時のオプション
 typedef struct SelectedOption {
@@ -30,6 +32,29 @@ selectedOption init(char *network, char *graph, char *searchNum) {
 }
 
 selectedOption option;
+
+typedef struct SparseDocument {
+  int termCount;
+  int *termIds;
+  double *weights;
+} sparseDocument;
+
+typedef struct SimilarityContext {
+  int docCount;
+  sparseDocument *docs;
+} similarityContext;
+
+typedef struct NodeMeta {
+  int category;
+  int id;
+  char keyword[MAX_KEYWORD_LEN];
+  char fileName[MAX_FILENAME_LEN];
+  char context[MAX_CONTEXT_LEN];
+  double cx;
+  double cy;
+  int r;
+  char color[MAX_COLOR_LEN];
+} nodeMeta;
 
 // *json は {name: string, normalText: string, wakachiText: string} を保持する
 // Json データ
@@ -51,6 +76,7 @@ void getRequestJson(cJSON *json, const char *fn1, const char *fn2,
 }
 
 void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
+                     const char *fnGraph, const char *fnLblk,
                      const char *searchNum) {
   cJSON *root = cJSON_CreateObject();
   cJSON *edges = cJSON_AddArrayToObject(root, "edges");
@@ -61,32 +87,163 @@ void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
   char keyword[MAX_KEYWORD_LEN], fileName[MAX_FILENAME_LEN],
       context[MAX_CONTEXT_LEN], color[MAX_COLOR_LEN];
 
-  // エッジの座標をロード
-  FILE *fp = fopen(fn1, "r");
-  if (!fp) {
-    fprintf(stderr, "Unknown file = %s\n", fn1);
+  similarityContext simCtx = {0};
+
+  int graphDocCount = 0;
+  int **graphAdj = NULL;
+  int *graphAdjCount = NULL;
+  double *edgeSimilarities = NULL;
+  int edgeSimilarityCount = 0;
+  nodeMeta *nodeMetas = NULL;
+
+  char line[MAX_GRAPH_LINE_LEN];
+
+  FILE *graphFp = fopen(fnGraph, "r");
+  if (!graphFp) {
+    fprintf(stderr, "Unknown file = %s\n", fnGraph);
     return;
   }
-  while (fscanf(fp, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2) == 4) {
-    cJSON *edge = cJSON_CreateObject();
-    cJSON_AddNumberToObject(edge, "x1", x1);
-    cJSON_AddNumberToObject(edge, "y1", y1);
-    cJSON_AddNumberToObject(edge, "x2", x2);
-    cJSON_AddNumberToObject(edge, "y2", y2);
-    cJSON_AddItemToArray(edges, edge);
+  if (fgets(line, sizeof(line), graphFp) == NULL ||
+      sscanf(line, "%d", &graphDocCount) != 1 || graphDocCount <= 0) {
+    fclose(graphFp);
+    fprintf(stderr, "Invalid graph file header = %s\n", fnGraph);
+    return;
   }
-  fclose(fp);
+  graphAdj = (int **)malloc(sizeof(int *) * graphDocCount);
+  graphAdjCount = (int *)malloc(sizeof(int) * graphDocCount);
+  if (!graphAdj || !graphAdjCount) {
+    fclose(graphFp);
+    fprintf(stderr, "Memory allocation failed.\n");
+    free(graphAdj);
+    free(graphAdjCount);
+    return;
+  }
+  for (int i = 0; i < graphDocCount; i++) {
+    graphAdj[i] = NULL;
+    graphAdjCount[i] = 0;
+    if (fgets(line, sizeof(line), graphFp) == NULL) {
+      fclose(graphFp);
+      fprintf(stderr, "Invalid graph file body = %s\n", fnGraph);
+      goto cleanup;
+    }
+    char *token = strtok(line, " \t\r\n");
+    if (!token) {
+      fclose(graphFp);
+      fprintf(stderr, "Invalid graph row = %s\n", fnGraph);
+      goto cleanup;
+    }
+    int degree = atoi(token);
+    graphAdjCount[i] = degree;
+    graphAdj[i] = (int *)malloc(sizeof(int) * degree);
+    if (!graphAdj[i] && degree > 0) {
+      fclose(graphFp);
+      fprintf(stderr, "Memory allocation failed.\n");
+      goto cleanup;
+    }
+    for (int j = 0; j < degree; j++) {
+      token = strtok(NULL, " \t\r\n");
+      if (!token) {
+        fclose(graphFp);
+        fprintf(stderr, "Invalid graph edge row = %s\n", fnGraph);
+        goto cleanup;
+      }
+      int neighbor = 0;
+      double weight = 0.0;
+      if (sscanf(token, "%d:%lf", &neighbor, &weight) != 2) {
+        fclose(graphFp);
+        fprintf(stderr, "Invalid graph edge token = %s\n", token);
+        goto cleanup;
+      }
+      graphAdj[i][j] = neighbor - 1;
+    }
+  }
+  fclose(graphFp);
+  graphFp = NULL;
+
+  FILE *lblkFp = fopen(fnLblk, "r");
+  if (!lblkFp) {
+    fprintf(stderr, "Unknown file = %s\n", fnLblk);
+    goto cleanup;
+  }
+  int lblkDocCount = 0, lblkTermCount = 0, lblkCategoryCount = 0;
+  if (fscanf(lblkFp, "%d %d %d", &lblkDocCount, &lblkTermCount,
+             &lblkCategoryCount) != 3 ||
+      lblkDocCount != graphDocCount) {
+    fclose(lblkFp);
+    fprintf(stderr, "Invalid lblk file header = %s\n", fnLblk);
+    goto cleanup;
+  }
+  simCtx.docCount = lblkDocCount;
+  simCtx.docs = (sparseDocument *)calloc((size_t)lblkDocCount, sizeof(sparseDocument));
+  if (!simCtx.docs) {
+    fclose(lblkFp);
+    fprintf(stderr, "Memory allocation failed.\n");
+    goto cleanup;
+  }
+
+  for (int i = 0; i < lblkDocCount; i++) {
+    int termCount = 0;
+    if (fscanf(lblkFp, "%d", &termCount) != 1 || termCount < 0) {
+      fclose(lblkFp);
+      fprintf(stderr, "Invalid lblk row = %s\n", fnLblk);
+      goto cleanup;
+    }
+    simCtx.docs[i].termCount = termCount;
+    simCtx.docs[i].termIds = (int *)malloc(sizeof(int) * termCount);
+    simCtx.docs[i].weights = (double *)malloc(sizeof(double) * termCount);
+    if ((termCount > 0) &&
+        (!simCtx.docs[i].termIds || !simCtx.docs[i].weights)) {
+      fclose(lblkFp);
+      fprintf(stderr, "Memory allocation failed.\n");
+      goto cleanup;
+    }
+    double norm = 0.0;
+    for (int j = 0; j < termCount; j++) {
+      int termId = 0;
+      double value = 0.0;
+      if (fscanf(lblkFp, "%d:%lf", &termId, &value) != 2) {
+        fclose(lblkFp);
+        fprintf(stderr, "Invalid lblk token = %s\n", fnLblk);
+        goto cleanup;
+      }
+      simCtx.docs[i].termIds[j] = termId - 1;
+      simCtx.docs[i].weights[j] = value;
+      norm += value * value;
+    }
+    if (norm > 0.0) {
+      double invNorm = 1.0 / sqrt(norm);
+      for (int j = 0; j < termCount; j++) {
+        simCtx.docs[i].weights[j] *= invNorm;
+      }
+    }
+  }
+  fclose(lblkFp);
 
   // ノードの座標をロード
-  fp = fopen(fn2, "r");
+  FILE *fp = fopen(fn2, "r");
   if (!fp) {
     fprintf(stderr, "Unknown file = %s\n", fn2);
     return;
+  }
+  nodeMetas = (nodeMeta *)calloc((size_t)atoi(searchNum), sizeof(nodeMeta));
+  if (!nodeMetas) {
+    fclose(fp);
+    fprintf(stderr, "Memory allocation failed.\n");
+    goto cleanup;
   }
   for (int i = 0; i < atoi(searchNum); i++) {
     fscanf(fp, "%d %511s %d %4095s %262143s %lf %lf %d %31s", &category,
            keyword, &id,
            fileName, context, &val1, &val2, &r, color);
+    nodeMetas[i].category = category;
+    nodeMetas[i].id = id;
+    snprintf(nodeMetas[i].keyword, sizeof(nodeMetas[i].keyword), "%s", keyword);
+    snprintf(nodeMetas[i].fileName, sizeof(nodeMetas[i].fileName), "%s", fileName);
+    snprintf(nodeMetas[i].context, sizeof(nodeMetas[i].context), "%s", context);
+    nodeMetas[i].cx = val1;
+    nodeMetas[i].cy = val2;
+    nodeMetas[i].r = r;
+    snprintf(nodeMetas[i].color, sizeof(nodeMetas[i].color), "%s", color);
     cJSON *node = cJSON_CreateObject();
     cJSON_AddNumberToObject(node, "category", category);
     cJSON_AddStringToObject(node, "keyword", keyword);
@@ -101,6 +258,86 @@ void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
   }
   fclose(fp);
 
+  // エッジの座標をロード
+  fp = fopen(fn1, "r");
+  if (!fp) {
+    fprintf(stderr, "Unknown file = %s\n", fn1);
+    return;
+  }
+  for (int i = 0; i < graphDocCount; i++) {
+    for (int j = 0; j < graphAdjCount[i]; j++) {
+      int k = graphAdj[i][j];
+      if (k > i && k >= 0 && k < simCtx.docCount) {
+        edgeSimilarityCount++;
+      }
+    }
+  }
+  edgeSimilarities = (double *)malloc(sizeof(double) * edgeSimilarityCount);
+  if (!edgeSimilarities && edgeSimilarityCount > 0) {
+    fclose(fp);
+    fprintf(stderr, "Memory allocation failed.\n");
+    goto cleanup;
+  }
+
+  int edgeIndex = 0;
+  for (int i = 0; i < graphDocCount; i++) {
+    sparseDocument *leftDoc = &simCtx.docs[i];
+    for (int j = 0; j < graphAdjCount[i]; j++) {
+      int k = graphAdj[i][j];
+      if (k <= i || k < 0 || k >= simCtx.docCount) {
+        continue;
+      }
+      sparseDocument *rightDoc = &simCtx.docs[k];
+      int leftIndex = 0;
+      int rightIndex = 0;
+      double similarity = 0.0;
+      while (leftIndex < leftDoc->termCount && rightIndex < rightDoc->termCount) {
+        int leftTermId = leftDoc->termIds[leftIndex];
+        int rightTermId = rightDoc->termIds[rightIndex];
+        if (leftTermId == rightTermId) {
+          similarity += leftDoc->weights[leftIndex] * rightDoc->weights[rightIndex];
+          leftIndex++;
+          rightIndex++;
+        } else if (leftTermId < rightTermId) {
+          leftIndex++;
+        } else {
+          rightIndex++;
+        }
+      }
+      edgeSimilarities[edgeIndex++] = similarity;
+    }
+  }
+
+  edgeIndex = 0;
+  for (int i = 0; i < graphDocCount; i++) {
+    for (int j = 0; j < graphAdjCount[i]; j++) {
+      int k = graphAdj[i][j];
+      if (k <= i || k < 0 || k >= simCtx.docCount) {
+        continue;
+      }
+      if (fscanf(fp, "%lf %lf %lf %lf", &x1, &y1, &x2, &y2) != 4) {
+        fclose(fp);
+        fprintf(stderr, "Invalid edge file body = %s\n", fn1);
+        goto cleanup;
+      }
+      cJSON *edge = cJSON_CreateObject();
+      cJSON_AddNumberToObject(edge, "x1", x1);
+      cJSON_AddNumberToObject(edge, "y1", y1);
+      cJSON_AddNumberToObject(edge, "x2", x2);
+      cJSON_AddNumberToObject(edge, "y2", y2);
+      if (edgeIndex < edgeSimilarityCount) {
+        cJSON_AddNumberToObject(edge, "similarity", edgeSimilarities[edgeIndex]);
+      }
+      cJSON_AddNumberToObject(edge, "sourceId", nodeMetas[i].id);
+      cJSON_AddStringToObject(edge, "sourceFileName", nodeMetas[i].fileName);
+      cJSON_AddNumberToObject(edge, "targetId", nodeMetas[k].id);
+      cJSON_AddStringToObject(edge, "targetFileName", nodeMetas[k].fileName);
+      edgeIndex++;
+      cJSON_AddItemToArray(edges, edge);
+    }
+  }
+  fclose(fp);
+
   char *jsonString = cJSON_Print(root);
   if (jsonString == NULL) {
     fprintf(stderr, "Failed to print JSON.\n");
@@ -109,6 +346,22 @@ void loadNetworkData(const char *fn1, const char *fn2, const char *fn3,
   printf("%s", jsonString);
   cJSON_Delete(root);
   free(jsonString);
+
+cleanup:
+  for (int i = 0; i < simCtx.docCount; i++) {
+    free(simCtx.docs[i].termIds);
+    free(simCtx.docs[i].weights);
+  }
+  free(simCtx.docs);
+  if (graphAdj) {
+    for (int i = 0; i < graphDocCount; i++) {
+      free(graphAdj[i]);
+    }
+  }
+  free(graphAdj);
+  free(graphAdjCount);
+  free(edgeSimilarities);
+  free(nodeMetas);
 }
 
 char *toLowerCase(char *str) {
@@ -191,7 +444,8 @@ void handleRequest() {
   generateGraph(mstArgs, knnArgs, hmlArgs, upperGraphName);
   generateNetwork(netArgs, option.network);
   loadNetworkData("./result/edge.txt", "./result/node.txt",
-                  "./result/category.txt", searchNum);
+                  "./result/category.txt", args1, "./result/lblk.txt",
+                  searchNum);
   cJSON_Delete(json);
   free(input);
 }

@@ -8,6 +8,12 @@
 </p>
 <p align="center">
   <img width="852" alt="DocumentsNetwork Screenshot" src="https://github.com/user-attachments/assets/90f927b4-236b-4c8e-836f-0d89f81fcbb8">
+</p>  
+<p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_2.png">
+</p>
+<p align="center">
+  <img  alt="DocumentsNetwork Screenshot" src="https://raw.githubusercontent.com/TweeTeaFOX223/DocumentsNetwork/refs/heads/fix1/0_thesis/app_image1_3.png">
 </p>
 
 ---
@@ -78,6 +84,9 @@ livedoorニュースコーパス（約7,300件）を使った実験で、この�
 livedoorニュースコーパス（約7,300件）を使った実験で、4種類のグラフ描画アルゴリズム（スペクトラル法・多次元尺度法・クロスエントロピー法・ばねモデル法）を比較しました。
 ばねモデル法が2つの基準をともに高水準で満たし、最も見やすいグラフを生成することが確認されました。この定量評価の結果は、人間が目視で確認した定性評価とも一致しており、提案した評価手法の妥当性が検証されています。
 このツールでもデフォルトの可視化アルゴリズムにばねモデル法を採用しています。
+
+補足:
+- client 画面では、この評価手法に基づく結果を `Request/Response Log` の上部に表示できます。現在表示中のグラフの評価値と、蓄積済みグラフの比較散布図については、後述の「[Request/Response Log 機能（client）](#requestresponse-log-機能client)」を参照してください。
 
 📚 **解説記事**：[類似文書を検索してネットワーク図を生成する](https://or-expert.com/?p=3841)  
 
@@ -405,6 +414,18 @@ client から Apache サーバー（`main.cgi`）へ送るリクエストと、�
 `edges` 要素:
 - `x1`, `y1`（number）： エッジの始点ノードの2D座標（ピクセル値）
 - `x2`, `y2`（number）：エッジの終点ノードの2D座標（ピクセル値）
+- `similarity`（number）：そのエッジで結ばれている2文書間のコサイン類似度。ノートブック等でエッジ長との相関確認や定量評価に利用可能
+- `sourceId`（number）：始点ノードに対応する文書ID
+- `sourceFileName`（string）：始点ノードに対応する文書ファイル名
+- `targetId`（number）：終点ノードに対応する文書ID
+- `targetFileName`（string）：終点ノードに対応する文書ファイル名
+
+補足:
+- `similarity` は「各ノード単体のスコア」ではなく、「そのエッジで結ばれている2文書の組」に対する値です。
+- 例えば `edges[0]` がノードAとノードBを結ぶ線なら、`edges[0].similarity` は「文書Aと文書Bの類似度」です。
+- 類似度は、`lblk.txt` に記録された各文書の類似貢献度ベクトルを正規化したうえで、その内積（コサイン類似度）として算出しています。
+- そのため、値は「そのエッジがどれだけ内容的に近い文書同士を結んでいるか」を表します。
+- `nodes` 配列の `title` は文書本文、`edges` は接続関係とその接続に対応する文書間類似度、という関係です。
 
 `nodes` 要素:
 - `category`（number）：説明語のカテゴリー番号（1以上）。同じ番号のノードは同じ説明語グループに属し、同色で描画される
@@ -427,7 +448,17 @@ curl -X POST "http://localhost/cgi-bin/main.cgi" \
 ```json
 {
   "edges": [
-    { "x1": 231.51, "y1": 114.61, "x2": 390.91, "y2": 514.59 }
+    {
+      "x1": 231.51,
+      "y1": 114.61,
+      "x2": 390.91,
+      "y2": 514.59,
+      "similarity": 0.842531,
+      "sourceId": 1,
+      "sourceFileName": "sample.txt",
+      "targetId": 12,
+      "targetFileName": "sample-2.txt"
+    }
   ],
   "nodes": [
     {
@@ -472,6 +503,19 @@ client 画面下部の `Request/Response Log` では、送受信データと生�
   - `response`
   - `generation`（`fileName`, `visual`, `graph`, `search`, `elapsedMs`, `elapsedSeconds`）
   - `error`
+
+また、`Request/Response Log` の上部には、論文の評価基準に基づく **定量評価表示パネル** があります。
+
+- `生成中のグラフの定量評価`
+  - 現在表示している 1 件のグラフについて評価値を表示します。
+  - `cv`：エッジ長の変動係数です。値が小さいほど、辺の長さのばらつきが小さい状態です。
+  - `on`：重なりノードペア数です。値が小さいほど、ノード同士の重なりが少ない状態です。
+  - 補助指標として、平均エッジ長と対象ノード数 / エッジ数も表示します。
+
+- `蓄積されたグラフの比較散布図`
+  - これまでに生成した複数のグラフを、`x軸 = cv`、`y軸 = on` で比較表示します。
+  - `Visual` 手法ごとに点を色分けし、凡例も表示します。
+  - 一般には左下に近いほど、エッジ長のばらつきとノード重なりの両方が小さい配置です。
 
 ---
 
